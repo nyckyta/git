@@ -1070,44 +1070,145 @@ static char *path_lookup(const char *cmd, int exe_only)
 	return prog;
 }
 
-static int do_putenv(char **env, const char *name, int size, int free_old);
+static const wchar_t *wcschrnul(const wchar_t *s, wchar_t c)
+{
+	while (*s && *s != c)
+		s++;
+	return s;
+}
 
-/* used number of elements of environ array, including terminating NULL */
-static int environ_size = 0;
-/* allocated size of environ array, in bytes */
-static int environ_alloc = 0;
+/* Compare only keys */
+static int wenvcmp(const void *a, const void *b)
+{
+	wchar_t *p = *(wchar_t **)a, *q = *(wchar_t **)b;
+	size_t p_len, q_len;
+
+	/* Find the keys */
+	p_len = wcschrnul(p, L'=') - p;
+	q_len = wcschrnul(q, L'=') - q;
+
+	/* If the length differs, include the shorter key's NUL */
+	if (p_len < q_len)
+		p_len++;
+	else
+		p_len = q_len + 1;
+
+	return _wcsnicmp(p, q, p_len);
+}
+
+/* We need a stable sort to convert the environment between UTF-16 <-> UTF-8 */
+#ifndef INTERNAL_QSORT
+#include "qsort.c"
+#endif
 
 /*
- * Create environment block suitable for CreateProcess. Merges current
- * process environment and the supplied environment changes.
+ * Build an environment block combining the inherited environment
+ * merged with the given list of settings.
+ *
+ * Values of the form "KEY=VALUE" in deltaenv override inherited values.
+ * Values of the form "KEY" in deltaenv delete inherited values.
+ *
+ * Multiple entries in deltaenv for the same key are explicitly allowed.
+ *
+ * We return a contiguous block of UNICODE strings with a final trailing
+ * zero word.
  */
 static wchar_t *make_environment_block(char **deltaenv)
 {
-	wchar_t *wenvblk = NULL;
-	char **tmpenv;
-	int i = 0, size = environ_size, wenvsz = 0, wenvpos = 0;
+	/*
+	 * The CRT (at least as of UCRT) secretly declares "_wenviron"
+	 * as a function that returns a pointer to a mostly static table.
+	 * Grab the pointer and cache it for the duration of our loop.
+	 */
+	wchar_t *wenv = GetEnvironmentStringsW(), *p;
+	size_t delta_size = 0, size = 1; /* for extra NUL at the end */
 
-	while (deltaenv && deltaenv[i])
-		i++;
+	wchar_t **array = NULL;
+	size_t alloc = 0, nr = 0, i;
 
-	/* copy the environment, leaving space for changes */
-	ALLOC_ARRAY(tmpenv, size + i);
-	memcpy(tmpenv, environ, size * sizeof(char*));
+	wchar_t *wdeltaenv;
 
-	/* merge supplied environment changes into the temporary environment */
-	for (i = 0; deltaenv && deltaenv[i]; i++)
-		size = do_putenv(tmpenv, deltaenv[i], size, 0);
+	wchar_t *result, *p3;
 
-	/* create environment block from temporary environment */
-	for (i = 0; tmpenv[i]; i++) {
-		size = 2 * strlen(tmpenv[i]) + 2; /* +2 for final \0 */
-		ALLOC_GROW(wenvblk, (wenvpos + size) * sizeof(wchar_t), wenvsz);
-		wenvpos += xutftowcs(&wenvblk[wenvpos], tmpenv[i], size) + 1;
+	/*
+	 * If there is no deltaenv to apply, simply return a copy
+	 */
+	if (!deltaenv || !*deltaenv) {
+		for (p = wenv; p && *p; ) {
+			size_t s = wcslen(p) + 1;
+			size += s;
+			p += s;
+		}
+
+		ALLOC_ARRAY(result, size);
+		memcpy(result, wenv, size * sizeof(*wenv));
+		FreeEnvironmentStringsW(wenv);
+		return result;
 	}
-	/* add final \0 terminator */
-	wenvblk[wenvpos] = 0;
-	free(tmpenv);
-	return wenvblk;
+
+	/*
+	 * If there is a deltaenv, let's accumulate all keys into `array`,
+	 * sort them using the stable git_qsort() and then copy, skipping
+	 * duplicate keys
+	 */
+
+	for (p = wenv; p && *p; ) {
+		size_t s = wcslen(p) + 1;
+		size += s;
+		ALLOC_GROW(array, nr + 1, alloc);
+		array[nr++] = p;
+		p += s;
+	}
+
+	/* (over-)assess size needed for wchar version of deltaenv */
+	for (i = 0; deltaenv[i]; i++) {
+		size_t s = strlen(deltaenv[i]) + 1;
+		delta_size += s;
+	}
+
+	ALLOC_ARRAY(wdeltaenv, delta_size);
+
+	/* convert the deltaenv, appending to array */
+	for (i = 0, p3 = wdeltaenv; deltaenv[i]; i++) {
+		size_t s = strlen(deltaenv[i]) + 1, wlen;
+		wlen = xutftowcs(p3, deltaenv[i], s * 2);
+
+		ALLOC_GROW(array, nr + 1, alloc);
+		array[nr++] = p3;
+
+		p3 += wlen + 1;
+	}
+
+	git_qsort(array, nr, sizeof(*array), wenvcmp);
+	ALLOC_ARRAY(result, size + delta_size);
+
+	for (p3 = result, i = 0; i < nr; i++) {
+		wchar_t *equal = wcschr(array[i], L'=');;
+
+		/* Skip "to delete" entry */
+		if (!equal)
+			continue;
+
+		p = array[i];
+
+		/* Skip any duplicate */
+		if (i + 1 < nr) {
+			wchar_t *next = array[i + 1];
+			size_t n = equal - p;
+
+			if (!_wcsnicmp(p, next, n) && (!next[n] || next[n] == L'='))
+				continue;
+		}
+
+		size = wcslen(p) + 1;
+		memcpy(p3, p, size * sizeof(*p));
+		p3 += size;
+	}
+	*p3 = L'\0';
+
+	free(array);
+	FreeEnvironmentStringsW(wenv);
+	return result;
 }
 
 struct pinfo_t {
@@ -1348,88 +1449,82 @@ int mingw_kill(pid_t pid, int sig)
 	return -1;
 }
 
-/*
- * Compare environment entries by key (i.e. stopping at '=' or '\0').
+/* UTF8 versions of getenv and putenv (and unsetenv).
+ * Internally, they use the CRT's stock UNICODE routines
+ * to avoid data loss.
+ *
+ * Unlike the mingw version, we DO NOT directly write to
+ * the CRT variables.  We also DO NOT try to manage/replace
+ * the CRT storage.
  */
-static int compareenv(const void *v1, const void *v2)
-{
-	const char *e1 = *(const char**)v1;
-	const char *e2 = *(const char**)v2;
-
-	for (;;) {
-		int c1 = *e1++;
-		int c2 = *e2++;
-		c1 = (c1 == '=') ? 0 : tolower(c1);
-		c2 = (c2 == '=') ? 0 : tolower(c2);
-		if (c1 > c2)
-			return 1;
-		if (c1 < c2)
-			return -1;
-		if (c1 == 0)
-			return 0;
-	}
-}
-
-static int bsearchenv(char **env, const char *name, size_t size)
-{
-	unsigned low = 0, high = size;
-	while (low < high) {
-		unsigned mid = low + ((high - low) >> 1);
-		int cmp = compareenv(&env[mid], &name);
-		if (cmp < 0)
-			low = mid + 1;
-		else if (cmp > 0)
-			high = mid;
-		else
-			return mid;
-	}
-	return ~low; /* not found, return 1's complement of insert position */
-}
-
-/*
- * If name contains '=', then sets the variable, otherwise it unsets it
- * Size includes the terminating NULL. Env must have room for size + 1 entries
- * (in case of insert). Returns the new size. Optionally frees removed entries.
- */
-static int do_putenv(char **env, const char *name, int size, int free_old)
-{
-	int i = bsearchenv(env, name, size - 1);
-
-	/* optionally free removed / replaced entry */
-	if (i >= 0 && free_old)
-		free(env[i]);
-
-	if (strchr(name, '=')) {
-		/* if new value ('key=value') is specified, insert or replace entry */
-		if (i < 0) {
-			i = ~i;
-			memmove(&env[i + 1], &env[i], (size - i) * sizeof(char*));
-			size++;
-		}
-		env[i] = (char*) name;
-	} else if (i >= 0) {
-		/* otherwise ('key') remove existing entry */
-		size--;
-		memmove(&env[i], &env[i + 1], (size - i) * sizeof(char*));
-	}
-	return size;
-}
-
 char *mingw_getenv(const char *name)
 {
+#define GETENV_MAX_RETAIN 30
+	static char *values[GETENV_MAX_RETAIN];
+	static int value_counter;
+	int len_key, len_value;
+	wchar_t *w_key;
 	char *value;
-	int pos = bsearchenv(environ, name, environ_size - 1);
-	if (pos < 0)
+	const wchar_t *w_value;
+
+	if (!name || !*name)
 		return NULL;
-	value = strchr(environ[pos], '=');
-	return value ? &value[1] : NULL;
+
+	len_key = strlen(name) + 1;
+	/* We cannot use xcalloc() here because that uses getenv() itself */
+	w_key = calloc(len_key, sizeof(wchar_t));
+	if (!w_key)
+		die("Out of memory, (tried to allocate %u wchar_t's)", len_key);
+	xutftowcs(w_key, name, len_key);
+	w_value = _wgetenv(w_key);
+	free(w_key);
+
+	if (!w_value)
+		return NULL;
+
+	len_value = wcslen(w_value) * 3 + 1;
+	/* We cannot use xcalloc() here because that uses getenv() itself */
+	value = calloc(len_value, sizeof(char));
+	if (!value)
+		die("Out of memory, (tried to allocate %u bytes)", len_value);
+	xwcstoutf(value, w_value, len_value);
+
+	/*
+	 * We return `value` which is an allocated value and the caller is NOT
+	 * expecting to have to free it, so we keep a round-robin array,
+	 * invalidating the buffer after GETENV_MAX_RETAIN getenv() calls.
+	 */
+	free(values[value_counter]);
+	values[value_counter++] = value;
+	if (value_counter >= ARRAY_SIZE(values))
+		value_counter = 0;
+
+	return value;
 }
 
-int mingw_putenv(const char *namevalue)
+int mingw_putenv(const char *name)
 {
-	ALLOC_GROW(environ, (environ_size + 1) * sizeof(char*), environ_alloc);
-	environ_size = do_putenv(environ, namevalue, environ_size, 1);
-	return 0;
+	int len, result;
+	char *equal;
+	wchar_t *wide;
+
+	if (!name || !*name)
+		return 0;
+
+	len = strlen(name);
+	equal = strchr(name, '=');
+	wide = calloc(len + 1 + !equal, sizeof(wchar_t));
+	if (!wide)
+		die("Out of memory, (tried to allocate %u wchar_t's)",
+		    len + 1 + !equal);
+	xutftowcs(wide, name, len+1);
+	if (!equal)
+		wcscat(wide, L"=");
+
+	result = _wputenv(wide);
+
+	free(wide);
+	return result;
 }
 
 /*
@@ -2291,17 +2386,6 @@ void mingw_startup(void)
 	maxlen = wcslen(wargv[0]);
 	for (i = 1; i < argc; i++)
 		maxlen = max(maxlen, wcslen(wargv[i]));
-	for (i = 0; wenv[i]; i++)
-		maxlen = max(maxlen, wcslen(wenv[i]));
-
-	/*
-	 * nedmalloc can't free CRT memory, allocate resizable environment
-	 * list. Note that xmalloc / xmemdupz etc. call getenv, so we cannot
-	 * use it while initializing the environment itself.
-	 */
-	environ_size = i + 1;
-	environ_alloc = alloc_nr(environ_size * sizeof(char*));
-	environ = malloc_startup(environ_alloc);
 
 	/* allocate buffer (wchar_t encodes to max 3 UTF-8 bytes) */
 	maxlen = 3 * maxlen + 1;
@@ -2310,13 +2394,7 @@ void mingw_startup(void)
 	/* convert command line arguments and environment to UTF-8 */
 	for (i = 0; i < argc; i++)
 		__argv[i] = wcstoutfdup_startup(buffer, wargv[i], maxlen);
-	for (i = 0; wenv[i]; i++)
-		environ[i] = wcstoutfdup_startup(buffer, wenv[i], maxlen);
-	environ[i] = NULL;
 	free(buffer);
-
-	/* sort environment for O(log n) getenv / putenv */
-	qsort(environ, i, sizeof(char*), compareenv);
 
 	/* fix Windows specific environment settings */
 	setup_windows_environment();
