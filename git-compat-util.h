@@ -302,6 +302,14 @@ char *gitdirname(char *);
 # include <sys/sysinfo.h>
 #endif
 
+#ifdef USE_NED_ALLOCATOR
+#include "compat/nedmalloc/nedmalloc.h"
+#define malloc nedmalloc
+#define calloc nedcalloc
+#define realloc nedrealloc
+#define free nedfree
+#endif
+
 /* On most systems <netdb.h> would have given us this, but
  * not on some systems (e.g. z/OS).
  */
