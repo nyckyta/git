@@ -19,7 +19,7 @@ get_actual_commits () {
 		}' <out | test-tool pkt-line unpack-sideband >o.pack &&
 	git index-pack o.pack &&
 	git verify-pack -v o.idx >objs &&
-	grep commit objs | cut -c-40 | sort >actual_commits
+	grep commit objs | cut -d" " -f1 | sort >actual_commits
 }
 
 check_output () {
@@ -37,6 +37,7 @@ check_output () {
 #             \ | /
 #               a
 test_expect_success 'setup repository' '
+	test_oid_init &&
 	test_commit a &&
 	git checkout -b o/foo &&
 	test_commit b &&
