@@ -1014,7 +1014,7 @@ char *mingw_getcwd(char *pointer, int len)
  * See http://msdn2.microsoft.com/en-us/library/17w5ykft(vs.71).aspx
  * (Parsing C++ Command-Line Arguments)
  */
-static const char *quote_arg(const char *arg)
+static const char *quote_arg_msvc(const char *arg)
 {
 	/* count chars to quote */
 	int len = 0, n = 0;
@@ -1067,6 +1067,37 @@ static const char *quote_arg(const char *arg)
 	*d++ = '"';
 	*d++ = 0;
 	return q;
+}
+
+#include "quote.h"
+
+static const char *quote_arg_msys2(const char *arg)
+{
+	struct strbuf buf = STRBUF_INIT;
+	const char *p2 = arg, *p;
+
+	for (p = arg; *p; p++) {
+		int ws = isspace(*p);
+		if (!ws && *p != '\\' && *p != '"' && *p != '{')
+			continue;
+		if (!buf.len)
+			strbuf_addch(&buf, '"');
+		if (p != p2)
+			strbuf_add(&buf, p2, p - p2);
+		if (!ws && *p != '{')
+			strbuf_addch(&buf, '\\');
+		p2 = p;
+	}
+
+	if (p == arg)
+		strbuf_addch(&buf, '"');
+	else if (!buf.len)
+		return arg;
+	else
+		strbuf_add(&buf, p2, p - p2),
+
+	strbuf_addch(&buf, '"');
+	return strbuf_detach(&buf, 0);
 }
 
 static const char *parse_interpreter(const char *cmd)
@@ -1160,6 +1191,10 @@ static int do_putenv(char **env, const char *name, int size, int free_old);
 static int environ_size = 0;
 /* allocated size of environ array, in bytes */
 static int environ_alloc = 0;
+/* used as a indicator when the environment has been changed outside mingw.c */
+static char **saved_environ;
+
+static void maybe_reinitialize_environ(void);
 
 /*
  * Create environment block suitable for CreateProcess. Merges current
@@ -1169,9 +1204,12 @@ static wchar_t *make_environment_block(char **deltaenv)
 {
 	wchar_t *wenvblk = NULL;
 	char **tmpenv;
-	int i = 0, size = environ_size, wenvsz = 0, wenvpos = 0;
+	int i = 0, size, wenvsz = 0, wenvpos = 0;
 
-	while (deltaenv && deltaenv[i])
+	maybe_reinitialize_environ();
+	size = environ_size;
+
+	while (deltaenv && deltaenv[i] && *deltaenv[i])
 		i++;
 
 	/* copy the environment, leaving space for changes */
@@ -1179,11 +1217,11 @@ static wchar_t *make_environment_block(char **deltaenv)
 	memcpy(tmpenv, environ, size * sizeof(char*));
 
 	/* merge supplied environment changes into the temporary environment */
-	for (i = 0; deltaenv && deltaenv[i]; i++)
+	for (i = 0; deltaenv && deltaenv[i] && *deltaenv[i]; i++)
 		size = do_putenv(tmpenv, deltaenv[i], size, 0);
 
 	/* create environment block from temporary environment */
-	for (i = 0; tmpenv[i]; i++) {
+	for (i = 0; tmpenv[i] && *tmpenv[i]; i++) {
 		size = 2 * strlen(tmpenv[i]) + 2; /* +2 for final \0 */
 		ALLOC_GROW(wenvblk, (wenvpos + size) * sizeof(wchar_t), wenvsz);
 		wenvpos += xutftowcs(&wenvblk[wenvpos], tmpenv[i], size) + 1;
@@ -1223,6 +1261,34 @@ struct pinfo_t {
 static struct pinfo_t *pinfo = NULL;
 CRITICAL_SECTION pinfo_cs;
 
+static int is_msys2_sh(const char *cmd)
+{
+	if (cmd && !strcmp(cmd, "sh")) {
+		static int ret = -1;
+		char *p;
+
+		if (ret >= 0)
+			return ret;
+
+		p = path_lookup(cmd, 0);
+		if (!p)
+			ret = 0;
+		else {
+			size_t len = strlen(p);
+			ret = len > 15 &&
+				is_dir_sep(p[len - 15]) &&
+				!strncasecmp(p + len - 14, "usr", 3) &&
+				is_dir_sep(p[len - 11]) &&
+				!strncasecmp(p + len - 10, "bin", 3) &&
+				is_dir_sep(p[len - 7]) &&
+				!strcasecmp(p + len - 6, "sh.exe");
+			free(p);
+		}
+		return ret;
+	}
+	return 0;
+}
+
 static pid_t mingw_spawnve_fd(const char *cmd, const char **argv, char **deltaenv,
 			      const char *dir,
 			      int prepend_cmd, int fhin, int fhout, int fherr)
@@ -1234,6 +1300,9 @@ static pid_t mingw_spawnve_fd(const char *cmd, const char **argv, char **deltaen
 	unsigned flags = CREATE_UNICODE_ENVIRONMENT;
 	BOOL ret;
 	HANDLE cons;
+	const char *(*quote_arg)(const char *arg) =
+		is_msys2_sh(*argv) ? quote_arg_msys2 : quote_arg_msvc;
+	const char *strace_env;
 
 	do_unset_environment_variables();
 
@@ -1289,6 +1358,31 @@ static pid_t mingw_spawnve_fd(const char *cmd, const char **argv, char **deltaen
 		strbuf_addstr(&args, quoted);
 		if (quoted != *argv)
 			free(quoted);
+	}
+
+	strace_env = getenv("GIT_STRACE_COMMANDS");
+	if (strace_env) {
+		char *p = path_lookup("strace.exe", 1);
+		if (!p)
+			return error("strace not found!");
+		if (xutftowcs_path(wcmd, p) < 0) {
+			free(p);
+			return -1;
+		}
+		free(p);
+		if (!strcmp("1", strace_env) ||
+		    !strcasecmp("yes", strace_env) ||
+		    !strcasecmp("true", strace_env))
+			strbuf_insert(&args, 0, "strace ", 7);
+		else {
+			const char *quoted = quote_arg(strace_env);
+			struct strbuf buf = STRBUF_INIT;
+			strbuf_addf(&buf, "strace -o %s ", quoted);
+			if (quoted != strace_env)
+				free((char *)quoted);
+			strbuf_insert(&args, 0, buf.buf, buf.len);
+			strbuf_release(&buf);
+		}
 	}
 
 	ALLOC_ARRAY(wargs, st_add(st_mult(2, args.len), 1));
@@ -1479,6 +1573,41 @@ static int compareenv(const void *v1, const void *v2)
 	}
 }
 
+/*
+ * Functions implemented outside Git are able to modify the environment,
+ * too. For example, cURL's curl_global_init() function sets the CHARSET
+ * environment variable (at least in certain circumstances).
+ *
+ * Therefore we need to be *really* careful *not* to assume that we have
+ * sole control over the environment and reinitialize it when necessary.
+ */
+static void maybe_reinitialize_environ(void)
+{
+	int i;
+
+	if (!saved_environ) {
+		warning("MinGW environment not initialized yet");
+		return;
+	}
+
+	if (environ_size <= 0)
+		return;
+
+	if (saved_environ != environ)
+		/* We have *no* idea how much space was allocated outside */
+		environ_alloc = 0;
+	else if (!environ[environ_size - 1])
+		return; /* still consistent */
+
+	for (i = 0; environ[i] && *environ[i]; i++)
+		; /* continue counting */
+	environ[i] = NULL;
+	environ_size = i + 1;
+
+	/* sort environment for O(log n) getenv / putenv */
+	qsort(environ, i, sizeof(char*), compareenv);
+}
+
 static int bsearchenv(char **env, const char *name, size_t size)
 {
 	unsigned low = 0, high = size;
@@ -1502,7 +1631,7 @@ static int bsearchenv(char **env, const char *name, size_t size)
  */
 static int do_putenv(char **env, const char *name, int size, int free_old)
 {
-	int i = bsearchenv(env, name, size - 1);
+	int i = size <= 0 ? -1 : bsearchenv(env, name, size - 1);
 
 	/* optionally free removed / replaced entry */
 	if (i >= 0 && free_old)
@@ -1527,7 +1656,14 @@ static int do_putenv(char **env, const char *name, int size, int free_old)
 char *mingw_getenv(const char *name)
 {
 	char *value;
-	int pos = bsearchenv(environ, name, environ_size - 1);
+	int pos;
+
+	if (environ_size <= 0)
+		return NULL;
+
+	maybe_reinitialize_environ();
+	pos = bsearchenv(environ, name, environ_size - 1);
+
 	if (pos < 0)
 		return NULL;
 	value = strchr(environ[pos], '=');
@@ -1536,7 +1672,9 @@ char *mingw_getenv(const char *name)
 
 int mingw_putenv(const char *namevalue)
 {
+	maybe_reinitialize_environ();
 	ALLOC_GROW(environ, (environ_size + 1) * sizeof(char*), environ_alloc);
+	saved_environ = environ;
 	environ_size = do_putenv(environ, namevalue, environ_size, 1);
 	return 0;
 }
@@ -2280,6 +2418,33 @@ static void setup_windows_environment(void)
 	/* simulate TERM to enable auto-color (see color.c) */
 	if (!getenv("TERM"))
 		setenv("TERM", "cygwin", 1);
+
+	/* calculate HOME if not set */
+	if (!getenv("HOME")) {
+		/*
+		 * try $HOMEDRIVE$HOMEPATH - the home share may be a network
+		 * location, thus also check if the path exists (i.e. is not
+		 * disconnected)
+		 */
+		if ((tmp = getenv("HOMEDRIVE"))) {
+			struct strbuf buf = STRBUF_INIT;
+			strbuf_addstr(&buf, tmp);
+			if ((tmp = getenv("HOMEPATH"))) {
+				strbuf_addstr(&buf, tmp);
+				if (is_directory(buf.buf))
+					setenv("HOME", buf.buf, 1);
+				else
+					tmp = NULL; /* use $USERPROFILE */
+			}
+			strbuf_release(&buf);
+		}
+		/* use $USERPROFILE if the home share is not available */
+		if (!tmp && (tmp = getenv("USERPROFILE")))
+			setenv("HOME", tmp, 1);
+	}
+
+	if (!getenv("LC_ALL") && !getenv("LC_CTYPE") && !getenv("LANG"))
+		setenv("LC_CTYPE", "C", 1);
 }
 
 int handle_long_path(wchar_t *path, int len, int max_path, int expand)
@@ -2461,7 +2626,7 @@ void mingw_startup(void)
 	 */
 	environ_size = i + 1;
 	environ_alloc = alloc_nr(environ_size * sizeof(char*));
-	environ = malloc_startup(environ_alloc);
+	saved_environ = environ = malloc_startup(environ_alloc);
 
 	/* allocate buffer (wchar_t encodes to max 3 UTF-8 bytes) */
 	maxlen = 3 * maxlen + 1;
@@ -2482,6 +2647,17 @@ void mingw_startup(void)
 	setup_windows_environment();
 
 	unset_environment_variables = xstrdup("PERL5LIB");
+
+	/*
+	 * Avoid a segmentation fault when cURL tries to set the CHARSET
+	 * variable and putenv() barfs at our nedmalloc'ed environment.
+	 */
+	if (!getenv("CHARSET")) {
+		struct strbuf buf = STRBUF_INIT;
+		strbuf_addf(&buf, "cp%u", GetACP());
+		setenv("CHARSET", buf.buf, 1);
+		strbuf_release(&buf);
+	}
 
 	/* initialize critical section for waitpid pinfo_t list */
 	InitializeCriticalSection(&pinfo_cs);
