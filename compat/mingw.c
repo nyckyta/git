@@ -1449,6 +1449,23 @@ int mingw_kill(pid_t pid, int sig)
 	return -1;
 }
 
+static uint64_t total_setup_time;
+static uint64_t total_getenv_time;
+static unsigned total_getenv_count;
+static void write_getenv_stats(void)
+{
+	struct strbuf buf = STRBUF_INIT;
+	int fd;
+
+	strbuf_addf(&buf, "setup: %"PRIuMAX"ns, getenv: %"PRIuMAX"ns (%u times)\n", (uintmax_t)total_setup_time, (uintmax_t)total_getenv_time, total_getenv_count);
+
+	fd = open("C:\\git-sdk-64\\getenv.jeff.trace", O_WRONLY | O_APPEND | O_CREAT, 0666);
+	if (write_in_full(fd, buf.buf, buf.len) < 0)
+		die_errno("Could not write getenv.trace");
+	close(fd);
+	strbuf_release(&buf);
+}
+
 /* UTF8 versions of getenv and putenv (and unsetenv).
  * Internally, they use the CRT's stock UNICODE routines
  * to avoid data loss.
@@ -1459,16 +1476,17 @@ int mingw_kill(pid_t pid, int sig)
  */
 char *mingw_getenv(const char *name)
 {
+	uint64_t start = getnanotime();
 #define GETENV_MAX_RETAIN 30
 	static char *values[GETENV_MAX_RETAIN];
 	static int value_counter;
 	int len_key, len_value;
 	wchar_t *w_key;
-	char *value;
+	char *value = NULL;
 	const wchar_t *w_value;
 
 	if (!name || !*name)
-		return NULL;
+		goto return_getenv;
 
 	len_key = strlen(name) + 1;
 	/* We cannot use xcalloc() here because that uses getenv() itself */
@@ -1480,7 +1498,7 @@ char *mingw_getenv(const char *name)
 	free(w_key);
 
 	if (!w_value)
-		return NULL;
+		goto return_getenv;
 
 	len_value = wcslen(w_value) * 3 + 1;
 	/* We cannot use xcalloc() here because that uses getenv() itself */
@@ -1499,17 +1517,22 @@ char *mingw_getenv(const char *name)
 	if (value_counter >= ARRAY_SIZE(values))
 		value_counter = 0;
 
+return_getenv:
+	total_getenv_time = getnanotime() - start;
+	total_getenv_count++;
+
 	return value;
 }
 
 int mingw_putenv(const char *name)
 {
-	int len, result;
+	uint64_t start = getnanotime();
+	int len, result = 0;
 	char *equal;
 	wchar_t *wide;
 
 	if (!name || !*name)
-		return 0;
+		goto return_putenv;
 
 	len = strlen(name);
 	equal = strchr(name, '=');
@@ -1524,6 +1547,11 @@ int mingw_putenv(const char *name)
 	result = _wputenv(wide);
 
 	free(wide);
+
+return_putenv:
+	total_getenv_time = getnanotime() - start;
+	total_getenv_count++;
+
 	return result;
 }
 
@@ -2375,6 +2403,7 @@ void mingw_startup(void)
 	wchar_t **wenv, **wargv;
 	_startupinfo si;
 
+	atexit(write_getenv_stats);
 	maybe_redirect_std_handles();
 
 	/* get wide char arguments and environment */
