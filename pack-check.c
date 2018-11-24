@@ -107,7 +107,7 @@ static int verify_packfile(struct packed_git *p,
 	for (i = 0; i < nr_objects; i++) {
 		void *data;
 		enum object_type type;
-		unsigned long size;
+		size_t size;
 		off_t curpos;
 		int data_valid;
 
