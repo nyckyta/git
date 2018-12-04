@@ -48,7 +48,7 @@ char curl_errorstr[CURL_ERROR_SIZE];
 
 static int curl_ssl_verify = -1;
 static int curl_ssl_try;
-static const char *curl_http_version = NULL;
+static const char *curl_http_version = "HTTP/1.1";
 static const char *ssl_cert;
 static const char *ssl_cipherlist;
 static const char *ssl_version;
