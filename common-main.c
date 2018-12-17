@@ -25,6 +25,7 @@ static void restore_sigpipe_to_default(void)
 
 int main(int argc, const char **argv)
 {
+extern int mmmdd;
 	/*
 	 * Always open file descriptors 0/1/2 to avoid clobbering files
 	 * in die().  It also avoids messing up when the pipes are dup'ed
@@ -42,5 +43,6 @@ int main(int argc, const char **argv)
 
 	restore_sigpipe_to_default();
 
+mmmdd = 1;
 	return cmd_main(argc, argv);
 }

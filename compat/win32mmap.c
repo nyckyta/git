@@ -1,5 +1,7 @@
 #include "../git-compat-util.h"
 
+int derror(const char *fmt, ...);
+
 void *git_mmap(void *start, size_t length, int prot, int flags, int fd, off_t offset)
 {
 	HANDLE osfhandle, hmap;
@@ -9,6 +11,7 @@ void *git_mmap(void *start, size_t length, int prot, int flags, int fd, off_t of
 	uint32_t l = o & 0xFFFFFFFF;
 	uint32_t h = (o >> 32) & 0xFFFFFFFF;
 
+derror("%s:%d mmap %p+%d fd%d/pid%d", __FILE__, __LINE__, start, (int)length, fd, (int)getpid());
 	osfhandle = (HANDLE)_get_osfhandle(fd);
 	if (!GetFileSizeEx(osfhandle, &len))
 		die("mmap: could not determine filesize");
@@ -42,5 +45,6 @@ void *git_mmap(void *start, size_t length, int prot, int flags, int fd, off_t of
 
 int git_munmap(void *start, size_t length)
 {
+derror("%s:%d munmap %p+%d pid%d", __FILE__, __LINE__, start, (int)length, (int)getpid());
 	return !UnmapViewOfFile(start);
 }

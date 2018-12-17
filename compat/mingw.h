@@ -246,6 +246,12 @@ int mingw_unlink(const char *pathname);
 int mingw_rmdir(const char *path);
 #define rmdir mingw_rmdir
 
+int mingw_close(int fd);
+#define close mingw_close
+
+int mingw_fclose(FILE *f);
+#define fclose mingw_fclose
+
 int mingw_open (const char *filename, int oflags, ...);
 #define open mingw_open
 

@@ -680,6 +680,48 @@ static int is_local_named_pipe_path(const char *filename)
 		filename[9]);
 }
 
+static int open_counter__;
+int mmmdd = 0;
+
+int derror(const char *fmt, ...);
+int derror(const char *fmt, ...)
+{
+	va_list args;
+	FILE *f;
+	int ret;
+
+if (!mmmdd) return 0;
+#undef fopen
+	f = fopen("C:/Users/johasc/AppData/Local/Temp/a2", "a");
+if (!f) die_errno("NOPE");
+#define fopen mingw_fopen
+	va_start(args, fmt);
+#undef vfprintf
+	ret = vfprintf(f, fmt, args);
+	va_end(args);
+	fputc('\n', f);
+#undef fclose
+	fclose(f);
+#define fclose mingw_fclose
+	return ret;
+}
+
+#undef close
+int mingw_close(int fd)
+{
+derror("%s:%d closing fd%d/pid%d", __FILE__, __LINE__, fd, (int)getpid());
+	return close(fd);
+}
+#define close mingw_close
+
+#undef fclose
+int mingw_fclose(FILE *f)
+{
+derror("%s:%d fclosing f%p/pid%d", __FILE__, __LINE__, f, (int)getpid());
+	return fclose(f);
+}
+#define fclose mingw_fclose
+
 int mingw_open (const char *filename, int oflags, ...)
 {
 	typedef int (*open_fn_t)(wchar_t const *wfilename, int oflags, ...);
@@ -725,6 +767,7 @@ int mingw_open (const char *filename, int oflags, ...)
 		if (fd >= 0 && set_hidden_flag(wfilename, 1))
 			warning("could not mark '%s' as hidden.", filename);
 	}
+if (strstr(filename, ".idx") || strstr(filename, ".pack")) { open_counter__++; derror("%s:%d opening %s fd%d/pid%d", __FILE__, __LINE__, filename, fd, (int)getpid()); }
 	return fd;
 }
 
@@ -773,6 +816,7 @@ FILE *mingw_fopen (const char *filename, const char *otype)
 		errno = ENOENT;
 	if (file && hide && set_hidden_flag(wfilename, 1))
 		warning("could not mark '%s' as hidden.", filename);
+if (strstr(filename, ".idx") || strstr(filename, ".pack")) { open_counter__++; derror("%s:%d fopening %s f%p/pid%d", __FILE__, __LINE__, filename, file, (int)getpid()); }
 	return file;
 }
 
@@ -793,6 +837,7 @@ FILE *mingw_freopen (const char *filename, const char *otype, FILE *stream)
 	file = _wfreopen(wfilename, wotype, stream);
 	if (file && hide && set_hidden_flag(wfilename, 1))
 		warning("could not mark '%s' as hidden.", filename);
+if (strstr(filename, ".idx") || strstr(filename, ".pack")) { open_counter__++; derror("%s:%d freopening %s f%p/pid%d", __FILE__, __LINE__, filename, file, (int)getpid()); }
 	return file;
 }
 

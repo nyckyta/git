@@ -545,8 +545,10 @@ int cmd_repack(int argc, const char **argv, const char *prefix)
 			if (len < hexsz)
 				continue;
 			sha1 = item->string + len - hexsz;
-			if (!string_list_has_string(&names, sha1))
+			if (!string_list_has_string(&names, sha1)) {
+				close_all_packs(the_repository->objects);
 				remove_redundant_pack(packdir, item->string);
+			}
 		}
 		if (!po_args.quiet && isatty(2))
 			opts |= PRUNE_PACKED_VERBOSE;
