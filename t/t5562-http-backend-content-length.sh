@@ -46,6 +46,7 @@ ssize_b100dots() {
 }
 
 test_expect_success 'setup' '
+	test_oid_init &&
 	HTTP_CONTENT_ENCODING="identity" &&
 	export HTTP_CONTENT_ENCODING &&
 	git config http.receivepack true &&
@@ -59,9 +60,14 @@ test_expect_success 'setup' '
 	printf done | packetize >>fetch_body &&
 	test_copy_bytes 10 <fetch_body >fetch_body.trunc &&
 	hash_next=$(git commit-tree -p HEAD -m next HEAD^{tree}) &&
-	printf "%s %s refs/heads/newbranch\\0report-status\\n" "$ZERO_OID" "$hash_next" | packetize >push_body &&
+	printf "%s %s refs/heads/newbranch\\0report-status object-format=%s\\n" "$ZERO_OID" "$hash_next" "$(test_oid algo)" | \
+		packetize >push_body &&
+	printf "%s %s refs/heads/newbranch\\0report-status\\n" "$ZERO_OID" "$hash_next" "$(test_oid algo)" | \
+		packetize >push_body_sha1 &&
 	printf 0000 >>push_body &&
+	printf 0000 >>push_body_sha1 &&
 	echo "$hash_next" | git pack-objects --stdout >>push_body &&
+	echo "$hash_next" | git pack-objects --stdout >>push_body_sha1 &&
 	test_copy_bytes 10 <push_body >push_body.trunc &&
 	: >empty_body
 '
@@ -106,6 +112,15 @@ test_expect_success GZIP 'fetch gzipped empty' '
 test_expect_success GZIP 'push plain' '
 	test_when_finished "git branch -D newbranch" &&
 	test_http_env receive push_body &&
+	verify_http_result "200 OK" &&
+	git rev-parse newbranch >act.head &&
+	echo "$hash_next" >exp.head &&
+	test_cmp act.head exp.head
+'
+
+test_expect_success GZIP,SHA1 'push plain with SHA-1' '
+	test_when_finished "git branch -D newbranch" &&
+	test_http_env receive push_body_sha1 &&
 	verify_http_result "200 OK" &&
 	git rev-parse newbranch >act.head &&
 	echo "$hash_next" >exp.head &&
