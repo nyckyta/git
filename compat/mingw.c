@@ -2079,11 +2079,14 @@ char *mingw_getenv(const char *name)
 
 	len_value = len_value * 3 + 1;
 	/* We cannot use xcalloc() here because that uses getenv() itself */
-	value = calloc(len_value, sizeof(char));
+	//value = calloc(len_value, sizeof(char));
+value = calloc(len_value < 16 ? 16 : len_value, sizeof(char));
 	if (!value)
 		die("Out of memory, (tried to allocate %u bytes)", len_value);
 	xwcstoutf(value, w_value, len_value);
 
+/* Be mean and invalidate the previous getenv() result */
+{ int offset = !strcmp("GIT_COMMITTER_EMAIL", name) || !strcmp("GIT_AUTHOR_EMAIL", name) ? 2 : (!strcmp("GIT_COMMITTER_DATE", name) || !strcmp("GIT_AUTHOR_DATE", name) ? 3 : 1); char *p = values[(value_counter + ARRAY_SIZE(values) - offset) % ARRAY_SIZE(values)]; if (p) xsnprintf(p, 16, "NONONONONONONO!"); }
 	/*
 	 * We return `value` which is an allocated value and the caller is NOT
 	 * expecting to have to free it, so we keep a round-robin array,
