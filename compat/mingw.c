@@ -2924,6 +2924,7 @@ static void setup_windows_environment(void)
 		 * executable (by not mistaking the dir separators
 		 * for escape characters).
 		 */
+		/* TODO: now that we no longer have a full cached env, we need to set this, right? */
 		convert_slashes(tmp);
 	}
 
