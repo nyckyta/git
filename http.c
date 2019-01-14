@@ -1052,7 +1052,7 @@ static void set_from_env(const char **var, const char *envname)
 {
 	const char *val = getenv(envname);
 	if (val)
-		*var = val;
+		*var = xstrdup(val);
 }
 
 void http_init(struct remote *remote, const char *url, int proactive_auth)
@@ -1119,7 +1119,7 @@ void http_init(struct remote *remote, const char *url, int proactive_auth)
 
 #ifdef USE_CURL_MULTI
 	{
-		char *http_max_requests = getenv("GIT_HTTP_MAX_REQUESTS");
+		const char *http_max_requests = getenv("GIT_HTTP_MAX_REQUESTS");
 		if (http_max_requests != NULL)
 			max_requests = atoi(http_max_requests);
 	}

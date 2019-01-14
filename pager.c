@@ -104,7 +104,7 @@ void prepare_pager_args(struct child_process *pager_process, const char *pager)
 
 void setup_pager(void)
 {
-	const char *pager = git_pager(isatty(1));
+	char *pager = xstrdup_or_null(git_pager(isatty(1)));
 
 	if (!pager)
 		return;
@@ -124,6 +124,7 @@ void setup_pager(void)
 
 	/* spawn the pager */
 	prepare_pager_args(&pager_process, pager);
+	FREE_AND_NULL(pager);
 	pager_process.in = -1;
 	argv_array_push(&pager_process.env_array, "GIT_PAGER_IN_USE");
 	if (start_command(&pager_process))

@@ -832,7 +832,7 @@ static int git_proxy_command_options(const char *var, const char *value,
 
 static int git_use_proxy(const char *host)
 {
-	git_proxy_command = getenv("GIT_PROXY_COMMAND");
+	git_proxy_command = xstrdup_or_null(getenv("GIT_PROXY_COMMAND"));
 	git_config(git_proxy_command_options, (void*)host);
 	return (git_proxy_command && *git_proxy_command);
 }
@@ -954,12 +954,12 @@ static enum protocol parse_connect_url(const char *url_orig, char **ret_host,
 
 static const char *get_ssh_command(void)
 {
-	const char *ssh;
+	static char *ssh;
 
-	if ((ssh = getenv("GIT_SSH_COMMAND")))
+	if ((ssh = xstrdup_or_null(getenv("GIT_SSH_COMMAND"))))
 		return ssh;
 
-	if (!git_config_get_string_const("core.sshcommand", &ssh))
+	if (!git_config_get_string("core.sshcommand", &ssh))
 		return ssh;
 
 	return NULL;
@@ -1060,10 +1060,9 @@ static struct child_process *git_connect_git(int fd[2], char *hostandport,
 	 * connect, unless the user has overridden us in
 	 * the environment.
 	 */
-	char *target_host = getenv("GIT_OVERRIDE_VIRTUAL_HOST");
-	if (target_host)
-		target_host = xstrdup(target_host);
-	else
+	char *target_host =
+		xstrdup_or_null(getenv("GIT_OVERRIDE_VIRTUAL_HOST"));
+	if (!target_host)
 		target_host = xstrdup(hostandport);
 
 	transport_check_allowed("git");

@@ -16,8 +16,8 @@ int is_terminal_dumb(void)
 
 const char *git_editor(void)
 {
-	const char *editor = getenv("GIT_EDITOR");
 	int terminal_is_dumb = is_terminal_dumb();
+	const char *editor = getenv("GIT_EDITOR");
 
 	if (!editor && editor_program)
 		editor = editor_program;

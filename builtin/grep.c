@@ -962,8 +962,11 @@ int cmd_grep(int argc, const char **argv, const char *prefix)
 		argc--;
 	}
 
-	if (show_in_pager == default_pager)
-		show_in_pager = git_pager(1);
+	if (show_in_pager == default_pager) {
+		char *pager = xstrdup_or_null(git_pager(1));
+		UNLEAK(pager);
+		show_in_pager = pager;
+	}
 	if (show_in_pager) {
 		opt.color = 0;
 		opt.name_only = 1;

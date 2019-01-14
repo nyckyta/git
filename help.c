@@ -259,7 +259,7 @@ void load_command_list(const char *prefix,
 		struct cmdnames *main_cmds,
 		struct cmdnames *other_cmds)
 {
-	const char *env_path = getenv("PATH");
+	const char *env_path;
 	const char *exec_path = git_exec_path();
 
 	if (exec_path) {
@@ -268,6 +268,7 @@ void load_command_list(const char *prefix,
 		uniq(main_cmds);
 	}
 
+	env_path = getenv("PATH");
 	if (env_path) {
 		char *paths, *path, *colon;
 		path = paths = xstrdup(env_path);

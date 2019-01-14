@@ -444,9 +444,8 @@ int git_config_parse_parameter(const char *text,
 
 int git_config_from_parameters(config_fn_t fn, void *data)
 {
-	const char *env = getenv(CONFIG_DATA_ENVIRONMENT);
+	char *env = xstrdup_or_null(getenv(CONFIG_DATA_ENVIRONMENT));
 	int ret = 0;
-	char *envw;
 	const char **argv = NULL;
 	int nr = 0, alloc = 0;
 	int i;
@@ -460,10 +459,7 @@ int git_config_from_parameters(config_fn_t fn, void *data)
 	source.origin_type = CONFIG_ORIGIN_CMDLINE;
 	cf = &source;
 
-	/* sq_dequote will write over it */
-	envw = xstrdup(env);
-
-	if (sq_dequote_to_argv(envw, &argv, &nr, &alloc) < 0) {
+	if (sq_dequote_to_argv(env, &argv, &nr, &alloc) < 0) {
 		ret = error(_("bogus format in %s"), CONFIG_DATA_ENVIRONMENT);
 		goto out;
 	}
@@ -477,7 +473,7 @@ int git_config_from_parameters(config_fn_t fn, void *data)
 
 out:
 	free(argv);
-	free(envw);
+	free(env);
 	cf = source.prev;
 	return ret;
 }
@@ -2290,7 +2286,7 @@ int git_config_get_max_percent_split_change(void)
 int git_config_get_fsmonitor(void)
 {
 	if (git_config_get_pathname("core.fsmonitor", &core_fsmonitor))
-		core_fsmonitor = getenv("GIT_TEST_FSMONITOR");
+		core_fsmonitor = xstrdup_or_null(getenv("GIT_TEST_FSMONITOR"));
 
 	if (core_fsmonitor && !*core_fsmonitor)
 		core_fsmonitor = NULL;

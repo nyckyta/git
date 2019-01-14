@@ -654,7 +654,7 @@ static const char *setup_explicit_git_dir(const char *gitdirenv,
 					  struct repository_format *repo_fmt,
 					  int *nongit_ok)
 {
-	const char *work_tree_env = getenv(GIT_WORK_TREE_ENVIRONMENT);
+	const char *work_tree_env;
 	const char *worktree;
 	char *gitfile;
 	int offset;
@@ -683,6 +683,7 @@ static const char *setup_explicit_git_dir(const char *gitdirenv,
 	}
 
 	/* #3, #7, #11, #15, #19, #23, #27, #31 (see t1510) */
+	work_tree_env = getenv(GIT_WORK_TREE_ENVIRONMENT);
 	if (work_tree_env)
 		set_git_work_tree(work_tree_env);
 	else if (is_bare_repository_cfg > 0) {
@@ -913,7 +914,7 @@ static enum discovery_result setup_git_directory_gently_1(struct strbuf *dir,
 							  struct strbuf *gitdir,
 							  int die_on_error)
 {
-	const char *env_ceiling_dirs = getenv(CEILING_DIRECTORIES_ENVIRONMENT);
+	const char *env_ceiling_dirs;
 	struct string_list ceiling_dirs = STRING_LIST_INIT_DUP;
 	const char *gitdirenv;
 	int ceil_offset = -1, min_offset = offset_1st_component(dir->buf);
@@ -931,6 +932,7 @@ static enum discovery_result setup_git_directory_gently_1(struct strbuf *dir,
 		return GIT_DIR_EXPLICIT;
 	}
 
+	env_ceiling_dirs = getenv(CEILING_DIRECTORIES_ENVIRONMENT);
 	if (env_ceiling_dirs) {
 		int empty_entry_found = 0;
 

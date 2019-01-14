@@ -973,8 +973,12 @@ static int notes_display_config(const char *k, const char *v, void *cb)
 const char *default_notes_ref(void)
 {
 	const char *notes_ref = NULL;
-	if (!notes_ref)
-		notes_ref = getenv(GIT_NOTES_REF_ENVIRONMENT);
+	if (!notes_ref) {
+		static char *env;
+		free(env);
+		env = xstrdup_or_null(getenv(GIT_NOTES_REF_ENVIRONMENT));
+		notes_ref = env;
+	}
 	if (!notes_ref)
 		notes_ref = notes_ref_name; /* value of core.notesRef config */
 	if (!notes_ref)
@@ -1039,7 +1043,6 @@ struct notes_tree **load_notes_trees(struct string_list *refs, int flags)
 
 void init_display_notes(struct display_notes_opt *opt)
 {
-	char *display_ref_env;
 	int load_config_refs = 0;
 	display_notes_refs.strdup_strings = 1;
 
@@ -1047,6 +1050,8 @@ void init_display_notes(struct display_notes_opt *opt)
 
 	if (!opt || opt->use_default_notes > 0 ||
 	    (opt->use_default_notes == -1 && !opt->extra_notes_refs.nr)) {
+		const char *display_ref_env;
+
 		string_list_append(&display_notes_refs, default_notes_ref());
 		display_ref_env = getenv(GIT_NOTES_DISPLAY_REF_ENVIRONMENT);
 		if (display_ref_env) {
