@@ -518,7 +518,8 @@ test_failure_ () {
 		junit_insert="$junit_insert $(xml_attr_encode \
 			"$(if test -n "$GIT_TEST_TEE_OUTPUT_FILE"
 			   then
-				cut -c "$GIT_TEST_TEE_OFFSET-" <"$GIT_TEST_TEE_OUTPUT_FILE"
+				test-tool path-utils skip-n-bytes \
+					"$GIT_TEST_TEE_OUTPUT_FILE" $GIT_TEST_TEE_OFFSET
 			   else
 				printf '%s\n' "$@" | sed 1d
 			   fi)")"
@@ -823,6 +824,11 @@ test_finish_ () {
 	echo >&3 ""
 	maybe_teardown_valgrind
 	maybe_teardown_verbose
+	if test -n "$GIT_TEST_TEE_OFFSET"
+	then
+		GIT_TEST_TEE_OFFSET=$(test-tool path-utils file-size \
+			"$GIT_TEST_TEE_OUTPUT_FILE")
+	fi
 }
 
 test_skip () {
@@ -900,11 +906,6 @@ write_junit_xml_testcase () {
 	write_junit_xml "$(printf '%s\n' \
 		"    <testcase $junit_attrs>" "$@" "    </testcase>")"
 	junit_have_testcase=t
-	if test -n "$GIT_TEST_TEE_OUTPUT_FILE"
-	then
-		GIT_TEST_TEE_OFFSET=$(test-tool path-utils file-size \
-			"$GIT_TEST_TEE_OUTPUT_FILE")
-	fi
 }
 
 test_done () {
@@ -1198,7 +1199,6 @@ then
 	if test -n "$GIT_TEST_TEE_OUTPUT_FILE"
 	then
 		GIT_TEST_TEE_OFFSET=0
-		GIT_TEST_TEE_ERR_OFFSET=0
 	fi
 fi
 
