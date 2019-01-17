@@ -685,10 +685,12 @@ void show_log(struct rev_info *opt)
 	/*
 	 * And then the pretty-printed message itself
 	 */
-	if (ctx.need_8bit_cte >= 0 && opt->add_signoff)
-		ctx.need_8bit_cte =
-			has_non_ascii(fmt_name(getenv("GIT_COMMITTER_NAME"),
-					       getenv("GIT_COMMITTER_EMAIL")));
+	if (ctx.need_8bit_cte >= 0 && opt->add_signoff) {
+		char *name = xstrdup_or_null(getenv("GIT_COMMITTER_NAME")), *email = xstrdup_or_null(getenv("GIT_COMMITTER_EMAIL"));
+
+		ctx.need_8bit_cte = has_non_ascii(fmt_name(name, email));
+		free(name); free(email);
+	}
 	ctx.date_mode = opt->date_mode;
 	ctx.date_mode_explicit = opt->date_mode_explicit;
 	ctx.abbrev = opt->diffopt.abbrev;

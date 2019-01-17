@@ -436,6 +436,12 @@ const char *git_author_info(int flag)
 		author_ident_explicitly_given |= IDENT_NAME_GIVEN;
 	if (getenv("GIT_AUTHOR_EMAIL"))
 		author_ident_explicitly_given |= IDENT_MAIL_GIVEN;
+	if (1) {
+		char *name = xstrdup_or_null(getenv("GIT_AUTHOR_NAME")), *email = xstrdup_or_null(getenv("GIT_AUTHOR_EMAIL")), *date = xstrdup_or_null(getenv("GIT_AUTHOR_DATE"));
+		const char *res = fmt_ident(name, email, date, flag);
+		free(name); free(email); free(date);
+		return res;
+	}
 	return fmt_ident(getenv("GIT_AUTHOR_NAME"),
 			 getenv("GIT_AUTHOR_EMAIL"),
 			 getenv("GIT_AUTHOR_DATE"),
@@ -448,6 +454,12 @@ const char *git_committer_info(int flag)
 		committer_ident_explicitly_given |= IDENT_NAME_GIVEN;
 	if (getenv("GIT_COMMITTER_EMAIL"))
 		committer_ident_explicitly_given |= IDENT_MAIL_GIVEN;
+	if (1) {
+		char *name = xstrdup_or_null(getenv("GIT_COMMITTER_NAME")), *email = xstrdup_or_null(getenv("GIT_COMMITTER_EMAIL")), *date = xstrdup_or_null(getenv("GIT_COMMITTER_DATE"));
+		const char *res = fmt_ident(name, email, date, flag);
+		free(name); free(email); free(date);
+		return res;
+	}
 	return fmt_ident(getenv("GIT_COMMITTER_NAME"),
 			 getenv("GIT_COMMITTER_EMAIL"),
 			 getenv("GIT_COMMITTER_DATE"),

@@ -4034,10 +4034,11 @@ void append_signoff(struct strbuf *msgbuf, size_t ignore_footer, unsigned flag)
 	unsigned no_dup_sob = flag & APPEND_SIGNOFF_DEDUP;
 	struct strbuf sob = STRBUF_INIT;
 	int has_footer;
+	char *name = xstrdup_or_null(getenv("GIT_COMMITTER_NAME")), *email = xstrdup_or_null(getenv("GIT_COMMITTER_EMAIL"));
 
 	strbuf_addstr(&sob, sign_off_header);
-	strbuf_addstr(&sob, fmt_name(getenv("GIT_COMMITTER_NAME"),
-				getenv("GIT_COMMITTER_EMAIL")));
+	strbuf_addstr(&sob, fmt_name(name, email));
+	FREE_AND_NULL(name); FREE_AND_NULL(email);
 	strbuf_addch(&sob, '\n');
 
 	if (!ignore_footer)
