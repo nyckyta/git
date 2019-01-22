@@ -555,11 +555,6 @@ static int bisect_auto_next(struct bisect_terms *terms, const char *prefix)
 	return 0;
 }
 
-static inline char *dequote_arg(const char *arg)
-{
-	return arg[0] != '\'' ? xstrdup(arg) : sq_dequote(xstrdup(arg));
-}
-
 static int bisect_start(struct bisect_terms *terms, int no_checkout,
 			const char **argv, int argc)
 {
@@ -580,22 +575,16 @@ static int bisect_start(struct bisect_terms *terms, int no_checkout,
 	 * Check for one bad and then some good revisions
 	 */
 	for (i = 0; i < argc; i++) {
-		char *arg = dequote_arg(argv[i]);
 
-		if (!strcmp(arg, "--")) {
+		if (!strcmp(argv[i], "--")) {
 			has_double_dash = 1;
-			free(arg);
 			break;
 		}
-		free(arg);
 	}
 
 	for (i = 0; i < argc; i++) {
-		char *dequoted = dequote_arg(argv[i]);
-		const char *arg = dequoted;
-
-		if (!strcmp(arg, "--")) {
-			free(dequoted);
+		const char *arg = argv[i];
+		if (!strcmp(argv[i], "--")) {
 			break;
 		} else if (!strcmp(arg, "--no-checkout")) {
 			no_checkout = 1;
@@ -603,7 +592,7 @@ static int bisect_start(struct bisect_terms *terms, int no_checkout,
 			 !strcmp(arg, "--term-old")) {
 			must_write_terms = 1;
 			free((void *) terms->term_good);
-			terms->term_good = dequote_arg(argv[++i]);
+			terms->term_good = xstrdup(argv[++i]);
 		} else if (skip_prefix(arg, "--term-good=", &arg) ||
 			   skip_prefix(arg, "--term-old=", &arg)) {
 			must_write_terms = 1;
@@ -613,7 +602,7 @@ static int bisect_start(struct bisect_terms *terms, int no_checkout,
 			 !strcmp(arg, "--term-new")) {
 			must_write_terms = 1;
 			free((void *) terms->term_bad);
-			terms->term_bad = dequote_arg(argv[++i]);
+			terms->term_bad = xstrdup(argv[++i]);
 		} else if (skip_prefix(arg, "--term-bad=", &arg) ||
 			   skip_prefix(arg, "--term-new=", &arg)) {
 			must_write_terms = 1;
@@ -622,7 +611,6 @@ static int bisect_start(struct bisect_terms *terms, int no_checkout,
 		} else if (starts_with(arg, "--") &&
 			   !one_of(arg, "--term-good", "--term-bad", NULL)) {
 			error(_("unrecognized option: '%s'"), arg);
-			free(dequoted);
 			return -1;
 		} else {
 			char *commit_id = xstrfmt("%s^{commit}", arg);
@@ -630,14 +618,12 @@ static int bisect_start(struct bisect_terms *terms, int no_checkout,
 				error(_("'%s' does not appear to be a valid "
 					"revision"), arg);
 				free(commit_id);
-				free(dequoted);
 				return -1;
 			}
 
 			string_list_append(&revs, oid_to_hex(&oid));
 			free(commit_id);
 		}
-		free(dequoted);
 	}
 	pathspec_pos = i;
 
