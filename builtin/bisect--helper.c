@@ -884,6 +884,18 @@ static int bisect_state(struct bisect_terms *terms, const char **argv,
 	return -1;
 }
 
+static int bisect_log(void)
+{
+	int fd, status;
+	fd = open(git_path_bisect_log(), O_RDONLY);
+	if (fd < 0)
+		return -1;
+
+	status = copy_fd(fd, STDOUT_FILENO);
+	close(fd);
+        return status ? -1 : 0;
+}
+
 int cmd_bisect__helper(int argc, const char **argv, const char *prefix)
 {
 	enum {
@@ -896,7 +908,8 @@ int cmd_bisect__helper(int argc, const char **argv, const char *prefix)
 		BISECT_NEXT,
 		BISECT_AUTO_NEXT,
 		BISECT_AUTOSTART,
-		BISECT_STATE
+		BISECT_STATE,
+		BISECT_LOG
 	} cmdmode = 0;
 	int no_checkout = 0, res = 0, nolog = 0;
 	struct option options[] = {
@@ -920,9 +933,11 @@ int cmd_bisect__helper(int argc, const char **argv, const char *prefix)
 			 N_("start the bisection if BISECT_START is empty or missing"), BISECT_AUTOSTART),
 		OPT_CMDMODE(0, "bisect-state", &cmdmode,
 			 N_("mark the state of ref (or refs)"), BISECT_STATE),
+		OPT_CMDMODE(0, "bisect-log", &cmdmode,
+			 N_("output the contents of BISECT_LOG"), BISECT_LOG),
 		OPT_BOOL(0, "no-checkout", &no_checkout,
 			 N_("update BISECT_HEAD instead of checking out the current commit")),
-		OPT_BOOL(0, "no-log", &nolog,
+		OPT_BOOL(0, "no-log", &nolog,	
 			 N_("no log for BISECT_WRITE ")),
 		OPT_END()
 	};
@@ -991,6 +1006,11 @@ int cmd_bisect__helper(int argc, const char **argv, const char *prefix)
 		set_terms(&terms, "bad", "good");
 		get_terms(&terms);
 		res = bisect_state(&terms, argv, argc);
+		break;
+	case BISECT_LOG:
+		if (argc > 1)
+			die(_("--bisect-log requires 0 arguments"));
+		res = bisect_log();
 		break;
 	default:
 		return error("BUG: unknown subcommand '%d'", cmdmode);
