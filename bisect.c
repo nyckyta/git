@@ -633,6 +633,12 @@ static void bisect_rev_setup(struct rev_info *revs, const char *prefix,
 	struct argv_array rev_argv = ARGV_ARRAY_INIT;
 	int i;
 
+	/*
+	 * Since the code is slowly being converted to C, there might be
+	 * instances where the revisions were initialized before. Thus
+	 * we first need to reset it.
+	 */
+	reset_revision_walk();
 	repo_init_revisions(the_repository, revs, prefix);
 	revs->abbrev = 0;
 	revs->commit_format = CMIT_FMT_UNSPECIFIED;
