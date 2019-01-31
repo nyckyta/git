@@ -31,7 +31,7 @@ static const char *zerr_to_string(int status)
 #define ZLIB_BUF_MAX ((uInt) 1024 * 1024 * 1024) /* 1GB */
 static inline uInt zlib_buf_cap(size_t len)
 {
-	return (ZLIB_BUF_MAX < len) ? ZLIB_BUF_MAX : len;
+	return ((size_t)(ZLIB_BUF_MAX) < len) ? ZLIB_BUF_MAX : len;
 }
 
 static void zlib_pre_call(git_zstream *s)
@@ -48,6 +48,45 @@ static void zlib_post_call(git_zstream *s)
 {
 	size_t bytes_consumed;
 	size_t bytes_produced;
+#if 0
+	See also e01503b523e79748ac91d876f506811c597d03cb
+
+	typedef struct z_stream_s {
+	    z_const Bytef *next_in;     /* next input byte */
+	    uInt     avail_in;  /* number of bytes available at next_in */
+	    uLong    total_in;  /* total number of input bytes read so far */
+
+	    Bytef    *next_out; /* next output byte will go here */
+	    uInt     avail_out; /* remaining free space at next_out */
+	    uLong    total_out; /* total number of bytes output so far */
+
+	    z_const char *msg;  /* last error message, NULL if no error */
+	    struct internal_state FAR *state; /* not visible by applications */
+
+	    alloc_func zalloc;  /* used to allocate the internal state */
+	    free_func  zfree;   /* used to free the internal state */
+	    voidpf     opaque;  /* private data object passed to zalloc and zfree */
+
+	    int     data_type;  /* best guess about the data type: binary or text
+				   for deflate, or the decoding state for inflate */
+	    uLong   adler;      /* Adler-32 or CRC-32 value of the uncompressed data */
+	    uLong   reserved;   /* reserved for future use */
+	} z_stream;
+#endif
+
+	/*
+		typedef struct git_zstream {
+			z_stream z;
+			size_t avail_in;
+			size_t avail_out;
+			size_t total_in;
+			size_t total_out;
+			unsigned char *next_in;
+			unsigned char *next_out;
+		} git_zstream;
+	 * z.total_* is unsigned long
+	 * s.total_* is size_t
+	 */
 
 	bytes_consumed = s->z.next_in - s->next_in;
 	bytes_produced = s->z.next_out - s->next_out;
@@ -60,8 +99,8 @@ static void zlib_post_call(git_zstream *s)
 		BUG("total_in mismatch");
   */
 
-	s->total_out = s->z.total_out;
-	s->total_in = s->z.total_in;
+	s->total_out += bytes_produced;
+	s->total_in += bytes_consumed;
 	s->next_in = s->z.next_in;
 	s->next_out = s->z.next_out;
 	s->avail_in -= bytes_consumed;

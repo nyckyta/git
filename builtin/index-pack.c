@@ -423,6 +423,8 @@ static void *unpack_entry_data(off_t offset, size_t size,
 	char hdr[32];
 	int hdrlen;
 
+	printf("blob size %" PRIuMAX "\n", (uintmax_t)size);
+
 	if (!is_delta_type(type)) {
 		hdrlen = xsnprintf(hdr, sizeof(hdr), "%s %"PRIuMAX,
 				   type_name(type),(uintmax_t)size) + 1;
@@ -431,6 +433,7 @@ static void *unpack_entry_data(off_t offset, size_t size,
 	} else
 		oid = NULL;
 	if (type == OBJ_BLOB && size > big_file_threshold)
+		/* ??? */
 		buf = fixed_buf;
 	else
 		buf = xmallocz(size);
@@ -453,7 +456,10 @@ static void *unpack_entry_data(off_t offset, size_t size,
 			stream.avail_out = sizeof(fixed_buf);
 		}
 	} while (status == Z_OK);
-	if (stream.total_out != size || status != Z_STREAM_END)
+	/* bugs out here */
+	if (stream.total_out != size)
+		bad_object(offset, _("total_out %I64d, size %I64d"), stream.total_out, size);
+	if (status != Z_STREAM_END)
 		bad_object(offset, _("inflate returned %d"), status);
 	git_inflate_end(&stream);
 	if (oid)
