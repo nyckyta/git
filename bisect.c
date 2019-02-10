@@ -964,10 +964,12 @@ void read_bisect_terms(const char **read_bad, const char **read_good)
 }
 
 /*
- * We use the convention that exiting with an exit code 10 means that
- * the bisection process finished successfully.
- * In this case the calling shell script should exit 0.
- *
+ * We use the convention that return -10 means the bisection process
+ * finished successfully.
+ * In this case the calling function or command should not turn a -10 
+ * return code into an error or a non zero exit code.
+ * This returned -10 is converted to 10 at the end of cmd_bisect__helper().
+ * 
  * If no_checkout is non-zero, the bisection process does not
  * checkout the trial commit but instead simply updates BISECT_HEAD.
  */
@@ -997,23 +999,35 @@ int bisect_next_all(const char *prefix, int no_checkout)
 
 	if (!revs.commits) {
 		/*
-		 * We should exit here only if the "bad"
+		 * We should return error here only if the "bad"
 		 * commit is also a "skip" commit.
 		 */
 		res = error_if_skipped_commits(tried, NULL);
 		if (res)
-			exit(-res);
+			return res;
 		printf(_("%s was both %s and %s\n"),
 		       oid_to_hex(current_bad_oid),
 		       term_good,
 		       term_bad);
-		exit(1);
+
+		/*
+		 * We don't want to clean the bisection state
+		 * as we need to get back to where we started
+		 * by using `git bisect reset`.
+		 */
+		return -1;
 	}
 
 	if (!all) {
 		fprintf(stderr, _("No testable commit found.\n"
 			"Maybe you started with bad path parameters?\n"));
-		exit(4);
+
+		/*
+		 * We don't want to clean the bisection state
+		 * as we need to get back to where we started
+		 * by using `git bisect reset`.
+		 */
+		return -4;
 	}
 
 	bisect_rev = &revs.commits->item->object.oid;
@@ -1021,12 +1035,17 @@ int bisect_next_all(const char *prefix, int no_checkout)
 	if (oideq(bisect_rev, current_bad_oid)) {
 		res = error_if_skipped_commits(tried, current_bad_oid);
 		if (res)
-			exit(-res);
+			return res;
 		printf("%s is the first %s commit\n", oid_to_hex(bisect_rev),
 			term_bad);
 		show_diff_tree(prefix, revs.commits->item);
-		/* This means the bisection process succeeded. */
-		exit(10);
+		/* 
+		 * This means the bisection process succeeded.
+		 * Using -10 so that the call chain can simply check 
+		 * for negative return values for early returns up 
+		 * until the cmd_bisect__helper() caller.
+		 */
+		return -10;
 	}
 
 	nr = all - reaches - 1;
