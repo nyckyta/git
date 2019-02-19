@@ -17,6 +17,8 @@ static unsigned long offset;
 
 static int tar_umask = 002;
 
+static gzFile gzip;
+
 static int write_tar_filter_archive(const struct archiver *ar,
 				    struct archiver_args *args);
 
@@ -40,7 +42,10 @@ static int write_tar_filter_archive(const struct archiver *ar,
 
 /* writes out the whole block, or dies if fails */
 static void write_block_or_die(const char *block) {
-	write_or_die(1, block, BLOCKSIZE);
+	if (!gzip)
+		write_or_die(1, block, BLOCKSIZE);
+	else if (gzwrite(gzip, block, (unsigned) BLOCKSIZE) != BLOCKSIZE)
+		die(_("gzwrite failed"));
 }
 
 /* writes out the whole block, but only if it is full */
@@ -466,18 +471,37 @@ static int write_tar_filter_archive(const struct archiver *ar,
 	filter.use_shell = 1;
 	filter.in = -1;
 
-	if (start_command(&filter) < 0)
-		die_errno(_("unable to start '%s' filter"), argv[0]);
-	close(1);
-	if (dup2(filter.in, 1) < 0)
-		die_errno(_("unable to redirect descriptor"));
-	close(filter.in);
+	if (!strcmp(":internal-gzip:", ar->data)) {
+		gzip = gzdopen(fileno(stdout), "wb");
+		if (!gzip)
+			die(_("Could not gzdopen stdout"));
+		if (args->compression_level >= 0 &&
+		    gzsetparams(gzip, args->compression_level,
+				Z_DEFAULT_STRATEGY) != Z_OK)
+			die(_("unable to set compression level %d"),
+			    args->compression_level);
+	} else {
+		if (start_command(&filter) < 0)
+			die_errno(_("unable to start '%s' filter"), argv[0]);
+		close(1);
+		if (dup2(filter.in, 1) < 0)
+			die_errno(_("unable to redirect descriptor"));
+		close(filter.in);
+	}
 
 	r = write_tar_archive(ar, args);
 
-	close(1);
-	if (finish_command(&filter) != 0)
-		die(_("'%s' filter reported error"), argv[0]);
+	if (gzip) {
+		int ret = gzclose(gzip);
+		if (ret == Z_ERRNO)
+			die_errno(_("gzclose failed"));
+		else if (ret != Z_OK)
+			die(_("gzclose failed (%d)"), ret);
+	} else {
+		close(1);
+		if (finish_command(&filter) != 0)
+			die(_("'%s' filter reported error"), argv[0]);
+	}
 
 	strbuf_release(&cmd);
 	return r;
