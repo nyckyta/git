@@ -7,6 +7,31 @@
 #include "test-tool.h"
 #include "git-compat-util.h"
 
+struct graph_node;
+
+typedef int dist_t;
+
+struct graph_neighbors {
+};
+
+struct graph_node {
+	struct {
+		struct graph_node *neighbor;
+		dist_t distance;
+	} *neighbors;
+	int degree;
+	struct {
+		struct graph_node *neighbor;
+		dist_t distance;
+	} **layer_neighbors;
+	void *payload;
+};
+
+struct graph {
+	struct graph_node *nodes;
+	size_t nr, alloc;
+};
+
 int cmd__genrandom(int argc, const char **argv)
 {
 	unsigned long count, next = 0;
