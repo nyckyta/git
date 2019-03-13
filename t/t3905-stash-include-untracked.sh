@@ -284,9 +284,12 @@ test_expect_success 'stash -u -- <non-existant> shows no changes when there are 
 '
 
 test_expect_success 'stash -u with globs' '
-	>untracked.txt &&
-	git stash -u -- ":(glob)**/*.txt" &&
-	test_path_is_missing untracked.txt
+	mkdir 1 &&
+	>1/untracked.txt &&
+	>1/untracked.empty &&
+	git stash push -u --all --keep-index -- ":(glob)**/*.txt" ":(glob)**/*.empty" &&
+	test_path_is_missing 1/untracked.txt &&
+	test_path_is_missing 1/untracked.empty
 '
 
 test_done
