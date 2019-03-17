@@ -122,6 +122,14 @@ int color_fprintf_ln(FILE *fp, const char *color, const char *fmt, ...);
 void color_print_strbuf(FILE *fp, const char *color, const struct strbuf *sb);
 
 /*
+ * Add a formatted string with color into the specified strbuf.
+ */
+void strbuf_color_vaddf(struct strbuf *sb, const char *color,
+			const char *fmt, va_list args);
+void strbuf_color_addf(struct strbuf *sb,
+		      const char *color, const char *fmt, ...);
+
+/*
  * Check if the given color is GIT_COLOR_NIL that means "no color selected".
  * The caller needs to replace the color with the actual desired color.
  */

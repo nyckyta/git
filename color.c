@@ -384,6 +384,47 @@ void color_print_strbuf(FILE *fp, const char *color, const struct strbuf *sb)
 		fprintf(fp, "%s", GIT_COLOR_RESET);
 }
 
+void strbuf_color_vaddf(struct strbuf *sb, const char *color,
+			const char *fmt, va_list args)
+{
+	size_t offset;
+	size_t len_color = strlen(color), len_reset = strlen(GIT_COLOR_RESET);
+
+	if (!len_color) {
+		strbuf_vaddf(sb, fmt, args);
+		return;
+	}
+
+	strbuf_add(sb, color, len_color);
+	offset = sb->len;
+	strbuf_vaddf(sb, fmt, args);
+	/* insert `reset` before, and `color` after line breaks, if any */
+	for (;;) {
+		char *p = memchr(sb->buf + offset, '\n', sb->len - offset);
+		int crlf;
+
+		if (!p)
+			break;
+
+		crlf = p != sb->buf + offset && p[-1] == '\r';
+		offset = p - sb->buf - crlf;
+		strbuf_insert(sb, offset, GIT_COLOR_RESET, len_reset);
+		offset += len_reset + 1 + crlf;
+		strbuf_insert(sb, offset, color, len_color);
+		offset += len_color;
+	}
+	strbuf_add(sb, GIT_COLOR_RESET, len_reset);
+}
+
+void strbuf_color_addf(struct strbuf *sb,
+		      const char *color, const char *fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	strbuf_color_vaddf(sb, color, fmt, args);
+	va_end(args);
+}
+
 static int color_vfprintf(FILE *fp, const char *color, const char *fmt,
 		va_list args, const char *trail)
 {
