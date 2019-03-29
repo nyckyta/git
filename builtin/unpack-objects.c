@@ -442,8 +442,7 @@ static void unpack_one(unsigned nr)
 {
 	unsigned shift;
 	unsigned char *pack;
-	unsigned long c;
-	size_t size;
+	size_t size, c;
 	enum object_type type;
 
 	obj_list[nr].offset = consumed_bytes;
@@ -514,6 +513,7 @@ int cmd_unpack_objects(int argc, const char **argv, const char *prefix)
 {
 	int i;
 	struct object_id oid;
+	const char *pack_file = NULL;
 
 	read_replace_refs = 0;
 
@@ -565,12 +565,25 @@ int cmd_unpack_objects(int argc, const char **argv, const char *prefix)
 				max_input_size = strtoumax(arg, NULL, 10);
 				continue;
 			}
+			if (starts_with(arg, "--pack-file=")) {
+				pack_file = arg + 12;
+				continue;
+			}
 			usage(unpack_usage);
 		}
 
 		/* We don't take any non-flag arguments now.. Maybe some day */
 		usage(unpack_usage);
 	}
+
+	if (pack_file) {
+		int fd = open(pack_file, O_RDONLY);
+		if (fd < 0)
+			die(_("pack file not found: '%s'"), pack_file);
+		if (dup2(fd, 0) < 0 || close(fd) < 0)
+			die(_("could not feed '%s' to stdin"), pack_file);
+	}
+
 	the_hash_algo->init_fn(&ctx);
 	unpack_all();
 	the_hash_algo->update_fn(&ctx, buffer, offset);

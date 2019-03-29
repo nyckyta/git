@@ -473,8 +473,7 @@ static void *unpack_raw_entry(struct object_entry *obj,
 			      struct object_id *oid)
 {
 	unsigned char *p;
-	unsigned long c;
-	size_t size;
+	size_t size, c;
 	off_t base_offset;
 	unsigned shift;
 	void *data;
