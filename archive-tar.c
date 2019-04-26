@@ -518,9 +518,9 @@ void init_tar_archiver(void)
 	int i;
 	register_archiver(&tar_archiver);
 
-	tar_filter_config("tar.tgz.command", "gzip -cn", NULL);
+	tar_filter_config("tar.tgz.command", ":internal-gzip:", NULL);
 	tar_filter_config("tar.tgz.remote", "true", NULL);
-	tar_filter_config("tar.tar.gz.command", "gzip -cn", NULL);
+	tar_filter_config("tar.tar.gz.command", ":internal-gzip:", NULL);
 	tar_filter_config("tar.tar.gz.remote", "true", NULL);
 	git_config(git_tar_config, NULL);
 	for (i = 0; i < nr_tar_filters; i++) {
