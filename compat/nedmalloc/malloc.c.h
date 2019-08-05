@@ -5223,6 +5223,20 @@ void* mspace_malloc(mspace msp, size_t bytes) {
   return 0;
 }
 
+void check_nedmalloc_invariants(const void *mem)
+{
+    mchunkptr p  = mem2chunk(mem);
+#if FOOTERS
+    mstate fm = get_mstate_for(p);
+    if (!ok_magic(fm)) {
+      USAGE_ERROR_ACTION(fm, p);
+      return;
+    }
+#else /* FOOTERS */
+#define fm gm
+#endif /* FOOTERS */
+}
+
 void mspace_free(mspace msp, void* mem) {
   if (mem != 0) {
     mchunkptr p  = mem2chunk(mem);

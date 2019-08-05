@@ -29,6 +29,8 @@ DEALINGS IN THE SOFTWARE.
 #ifndef NEDMALLOC_H
 #define NEDMALLOC_H
 
+/* To help debugging small buffer overruns that escape even valgrind */
+void check_nedmalloc_invariants(const void *mem);
 
 /* See malloc.c.h for what each function does.
 
