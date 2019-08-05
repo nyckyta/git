@@ -846,7 +846,7 @@ void   nedpfree(nedpool *p, void *mem) THROWSPEC
 	threadcache *tc;
 	int mymspace;
 	size_t memsize;
-	assert(mem);
+	if (!mem) return;
 	GetThreadCache(&p, &tc, &mymspace, 0);
 #if THREADCACHEMAX
 	memsize=nedblksize(mem);
