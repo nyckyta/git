@@ -1249,7 +1249,7 @@ test_expect_success 'rebase -i error on commits with \ in message' '
 	test_expect_code 1 grep  "	emp" error
 '
 
-test_expect_success SHA1 'short SHA-1 setup' '
+test_expect_success 'short SHA-1 setup' '
 	test_when_finished "git checkout master" &&
 	git checkout --orphan collide &&
 	git rm -rf . &&
@@ -1261,7 +1261,7 @@ test_expect_success SHA1 'short SHA-1 setup' '
 	)
 '
 
-test_expect_success SHA1 'short SHA-1 collide' '
+test_expect_success 'short SHA-1 collide' '
 	test_when_finished "reset_rebase && git checkout master" &&
 	git checkout collide &&
 	(
