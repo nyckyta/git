@@ -14,7 +14,6 @@ write_command () {
 }
 
 test_expect_success 'test capability advertisement' '
-	test_oid_init &&
 	cat >expect <<-EOF &&
 	version 2
 	agent=git/$(git version | cut -d" " -f3)

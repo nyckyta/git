@@ -12,7 +12,6 @@ then
 fi
 
 test_expect_success 'setup' '
-	test_oid_init &&
 	test_oid_cache <<-EOF &&
 	lo_oid sha1:e68fe8129b546b101aee9510c5328e7f21ca1d18
 	lo_oid sha256:471819e8c52bf11513f100b2810a8aa0622d5cd3d1c913758a071dd4b3bad8fe

@@ -11,7 +11,6 @@ test_expect_success 'setup repo' '
 	git config gc.writeCommitGraph false &&
 	infodir=".git/objects/info" &&
 	graphdir="$infodir/commit-graphs" &&
-	test_oid_init &&
 	test_oid_cache <<-EOM
 	shallow sha1:1760
 	shallow sha256:2064
