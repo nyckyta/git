@@ -369,8 +369,7 @@ static int handle_alias(int *argcp, const char ***argv)
 			die(_("alias '%s' changes environment variables.\n"
 			      "You can use '!git' in the alias to do this"),
 			    alias_command);
-		memmove(new_argv - option_count, new_argv,
-				count * sizeof(char *));
+		MOVE_ARRAY(new_argv - option_count, new_argv, count);
 		new_argv -= option_count;
 
 		if (count < 1)
@@ -385,7 +384,7 @@ static int handle_alias(int *argcp, const char ***argv)
 
 		REALLOC_ARRAY(new_argv, count + *argcp);
 		/* insert after command name */
-		memcpy(new_argv + count, *argv + 1, sizeof(char *) * *argcp);
+		COPY_ARRAY(new_argv + count, *argv + 1, *argcp);
 
 		trace2_cmd_alias(alias_command, new_argv);
 		trace2_cmd_list_config();
@@ -739,8 +738,6 @@ static int run_argv(int *argcp, const char ***argv)
 		 */
 		if (!done_alias)
 			handle_builtin(*argcp, *argv);
-
-#if 0 // TODO In GFW, need to amend a7924b655e940b06cb547c235d6bed9767929673 to include trace2_ and _tr2 lines.
 		else if (get_builtin(**argv)) {
 			struct argv_array args = ARGV_ARRAY_INIT;
 			int i;
@@ -775,7 +772,6 @@ static int run_argv(int *argcp, const char ***argv)
 				exit(i);
 			die("could not execute builtin %s", **argv);
 		}
-#endif // a7924b655e940b06cb547c235d6bed9767929673
 
 		/* .. then try the external ones */
 		execv_dashed_external(*argv);

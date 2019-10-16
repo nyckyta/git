@@ -216,6 +216,7 @@
 /tags
 /TAGS
 /cscope*
+*.hcc
 *.obj
 *.lib
 *.res
@@ -231,6 +232,9 @@
 *.ipdb
 *.dll
 .vs/
-/Debug/
-/Release/
+Debug/
+Release/
+/UpgradeLog*.htm
+/git.VC.VC.opendb
+/git.VC.db
 *.dSYM
