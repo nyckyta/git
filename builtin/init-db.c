@@ -50,6 +50,9 @@ static void copy_templates_1(struct strbuf *path, struct strbuf *template_path,
 			continue;
 		strbuf_addstr(path, de->d_name);
 		strbuf_addstr(template_path, de->d_name);
+		if (git_env_bool("GIT_INIT_DISABLE_HOOKS", 0) &&
+		    de->d_type == DT_DIR && !strcmp("hooks", de->d_name))
+			strbuf_addstr(path, "-disabled");
 		if (lstat(path->buf, &st_git)) {
 			if (errno != ENOENT)
 				die_errno(_("cannot stat '%s'"), path->buf);
