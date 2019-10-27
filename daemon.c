@@ -15,6 +15,7 @@ static enum log_destination {
 	LOG_DESTINATION_STDERR = 1,
 	LOG_DESTINATION_SYSLOG = 2,
 } log_destination = LOG_DESTINATION_UNSET;
+static FILE *log_tee_file;
 static int verbose;
 static int reuseaddr;
 static int informative_errors;
@@ -88,6 +89,13 @@ static void logreport(int priority, const char *err, va_list params)
 		break;
 	}
 	case LOG_DESTINATION_STDERR:
+		if (log_tee_file) {
+			fprintf(log_tee_file, "[%"PRIuMAX"] ",
+				(uintmax_t)getpid());
+			vfprintf(log_tee_file, err, params);
+			fputc('\n', log_tee_file);
+			fflush(log_tee_file);
+		}
 		/*
 		 * Since stderr is set to buffered mode, the
 		 * logging of different processes will not overlap
@@ -1316,6 +1324,12 @@ int cmd_main(int argc, const char **argv)
 				continue;
 			} else if (!strcmp(v, "stderr")) {
 				log_destination = LOG_DESTINATION_STDERR;
+				continue;
+			} else if (skip_prefix(v, "tee:", &v)) {
+				log_destination = LOG_DESTINATION_STDERR;
+				if (log_tee_file)
+					fclose(log_tee_file);
+				log_tee_file = xfopen(v, "a");
 				continue;
 			} else if (!strcmp(v, "none")) {
 				log_destination = LOG_DESTINATION_NONE;

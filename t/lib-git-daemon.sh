@@ -21,11 +21,6 @@ then
 	test_done
 fi
 
-if test_have_prereq !PIPE
-then
-	test_skip_or_die GIT_TEST_GIT_DAEMON "file system does not support FIFOs"
-fi
-
 test_set_port LIB_GIT_DAEMON_PORT
 
 GIT_DAEMON_PID=
@@ -52,21 +47,23 @@ start_git_daemon() {
 	fi
 
 	say >&3 "Starting git daemon ..."
-	mkfifo git_daemon_output
 	${LIB_GIT_DAEMON_COMMAND:-git daemon} \
 		--listen=127.0.0.1 --port="$LIB_GIT_DAEMON_PORT" \
 		--reuseaddr --verbose --pid-file="$GIT_DAEMON_PIDFILE" \
+		--log-destination=tee:git_daemon_output \
 		--base-path="$GIT_DAEMON_DOCUMENT_ROOT_PATH" \
 		"$@" "$GIT_DAEMON_DOCUMENT_ROOT_PATH" \
-		>&3 2>git_daemon_output &
+		>&3 2>&4 &
 	GIT_DAEMON_PID=$!
-	{
-		read -r line <&7
-		printf "%s\n" "$line" >&4
-		cat <&7 >&4 &
-	} 7<git_daemon_output &&
+
+	# Wait for the first line in the output
+	while test ! -s git_daemon_output
+	do
+		sleep 1
+	done
 
 	# Check expected output
+	read -r line <git_daemon_output
 	if test x"$(expr "$line" : "\[[0-9]*\] \(.*\)")" != x"Ready to rumble"
 	then
 		kill "$GIT_DAEMON_PID"
@@ -88,7 +85,7 @@ stop_git_daemon() {
 	kill "$GIT_DAEMON_PID"
 	wait "$GIT_DAEMON_PID" >&3 2>&4
 	ret=$?
-	if ! test_match_signal 15 $ret
+	if ! test_match_signal 15 $ret && test 127 != $ret
 	then
 		error "git daemon exited with status: $ret"
 	fi

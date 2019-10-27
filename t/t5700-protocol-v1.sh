@@ -67,6 +67,11 @@ test_expect_success 'pull with git:// using protocol v1' '
 test_expect_success 'push with git:// using protocol v1' '
 	test_commit -C daemon_child three &&
 
+	if test_have_prereq MINGW
+	then
+		test_config -C daemon_child sendpack.sideband false
+	fi &&
+
 	# Push to another branch, as the target repository has the
 	# master branch checked out and we cannot push into it.
 	GIT_TRACE_PACKET=1 git -C daemon_child -c protocol.version=1 \
@@ -169,7 +174,7 @@ test_expect_success 'create repo to be served by ssh:// transport' '
 
 test_expect_success 'clone with ssh:// using protocol v1' '
 	GIT_TRACE_PACKET=1 git -c protocol.version=1 \
-		clone "ssh://myhost:$(pwd)/ssh_parent" ssh_child 2>log &&
+		clone "ssh://myhost:$PWD/ssh_parent" ssh_child 2>log &&
 	expect_ssh git-upload-pack &&
 
 	git -C ssh_child log -1 --format=%s >actual &&
