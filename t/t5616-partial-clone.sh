@@ -317,7 +317,7 @@ setup_triangle () {
 	cp big-blob.txt server &&
 	git -C server add big-blob.txt &&
 	git -C server commit -m "initial" &&
-	git clone --bare --filter=tree:0 "file://$(pwd)/server" client &&
+	git clone --bare --filter=blob:none "file://$(pwd)/server" client &&
 	echo another line >>server/big-blob.txt &&
 	git -C server commit -am "append line to big blob" &&
 
