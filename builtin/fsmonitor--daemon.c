@@ -153,16 +153,14 @@ error:
 	while (isspace(*p))
 		p++;
 	since = strtoumax(p, &p, 10);
-	/*
-	 * TODO: set the initial timestamp properly,
-	 * return "/" if since <= timestamp
-	 */
-	if (!since || *p) {
+	if (!since || since < state->latest_update || *p) {
+		pthread_mutex_unlock(&state->queue_update_lock);
 		error(_("fsmonitor: %s (%" PRIuMAX", command: %s, rest %s)"),
 		      *p ? "extra stuff" : "incorrect/early timestamp",
 		      since, command, p);
 		goto error;
 	}
+
 
 	/*
 	 * write out cookie file so the queue gets filled with all
