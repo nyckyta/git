@@ -43,7 +43,7 @@ test_expect_success 'many notes created with git-notes triggers fanout' '
 '
 
 test_expect_success 'deleting most notes with git-notes' '
-	num_notes=250 &&
+	num_notes=290 &&
 	i=0 &&
 	git rev-list HEAD |
 	while test $i -lt $num_notes && read sha1
@@ -56,8 +56,8 @@ test_expect_success 'deleting most notes with git-notes' '
 '
 
 test_expect_success 'most notes deleted correctly with git-notes' '
-	git log HEAD~250 | grep "^    " > output &&
-	i=50 &&
+	git log HEAD~290 | grep "^    " > output &&
+	i=10 &&
 	while test $i -gt 0
 	do
 		echo "    commit #$i" &&
@@ -67,7 +67,7 @@ test_expect_success 'most notes deleted correctly with git-notes' '
 	test_cmp expect output
 '
 
-test_expect_success SHA1 'deleting most notes triggers fanout consolidation' '
+test_expect_success 'deleting most notes triggers fanout consolidation' '
 	# Expect entire notes tree to have a fanout == 0
 	git ls-tree -r --name-only refs/notes/commits |
 	while read path
