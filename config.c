@@ -205,6 +205,13 @@ static int prepare_include_condition_pattern(struct strbuf *pat)
 		prefix = slash - path.buf + 1 /* slash */;
 	} else if (!is_absolute_path(pat->buf))
 		strbuf_insert(pat, 0, "**/", 3);
+	else if (file_exists(pat->buf)) {
+		strbuf_realpath(&path, pat->buf, 1);
+		if (pat->len && is_dir_sep(pat->buf[pat->len - 1]))
+			strbuf_complete(&path, '/');
+		strbuf_swap(&path,pat);
+		prefix = (int)pat->len;
+	}
 
 	add_trailing_starstar_for_dir(pat);
 
