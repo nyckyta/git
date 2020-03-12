@@ -200,14 +200,27 @@ static void fsevent_callback(ConstFSEventStreamRef streamRef,
 
 		if (!special) {
 			log_flags_set(&work_str, event_flags[i]);
-			if (fsmonitor_queue_path(state, &queue,
-						 work_str.buf, work_str.len,
-						 time) < 0) {
+
+			/* TODO: fsevent could be marked as both a file and directory */
+			if ((event_flags[i] & kFSEventStreamEventFlagItemIsFile) &&
+			    fsmonitor_queue_path(state, &queue, work_str.buf,
+						 work_str.len, time) < 0) {
 				state->error_code = -1;
 				error("could not queue '%s'; exiting",
 				      work_str.buf);
 				fsmonitor_listen_stop(state);
 				return;
+			} else if (event_flags[i] & kFSEventStreamEventFlagItemIsDir) {
+				strbuf_addch(&work_str, '/');
+				if (fsmonitor_queue_path(state, &queue,
+							 work_str.buf, work_str.len,
+							 time) < 0) {
+					state->error_code = -1;
+					error("could not queue '%s'; exiting",
+					      work_str.buf);
+					fsmonitor_listen_stop(state);
+					return;
+				}
 			}
 		} else if (special == FSMONITOR_DAEMON_QUIT) {
 			trace2_message("message", ".git directory being removed so quitting.");
