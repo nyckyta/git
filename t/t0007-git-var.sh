@@ -29,6 +29,7 @@ test_expect_success !FAIL_PREREQS,!AUTOIDENT 'requested identites are strict' '
 # testing the whole output would make our test too brittle with
 # respect to unrelated changes in the test suite's environment.
 test_expect_success 'git var -l lists variables' '
+false &&
 	git var -l >actual &&
 	echo "$GIT_AUTHOR_NAME <$GIT_AUTHOR_EMAIL> $GIT_AUTHOR_DATE" >expect &&
 	sed -n s/GIT_AUTHOR_IDENT=//p <actual >actual.author &&
