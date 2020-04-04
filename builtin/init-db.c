@@ -9,6 +9,7 @@
 #include "builtin.h"
 #include "exec-cmd.h"
 #include "parse-options.h"
+#include "dir.h"
 
 #ifndef DEFAULT_GIT_TEMPLATE_DIR
 #define DEFAULT_GIT_TEMPLATE_DIR "/usr/share/git-core/templates"
@@ -168,10 +169,13 @@ static int git_init_db_config(const char *k, const char *v, void *cb)
  */
 static int needs_work_tree_config(const char *git_dir, const char *work_tree)
 {
+	size_t prefix_len;
+
 	if (!strcmp(work_tree, "/") && !strcmp(git_dir, "/.git"))
 		return 0;
-	if (skip_prefix(git_dir, work_tree, &git_dir) &&
-	    !strcmp(git_dir, "/.git"))
+	if (strip_suffix(git_dir, "/.git", &prefix_len) &&
+	    prefix_len == strlen(work_tree) &&
+	    !fspathncmp(git_dir, work_tree, prefix_len))
 		return 0;
 	return 1;
 }
@@ -263,18 +267,6 @@ static int create_default_files(const char *template_path,
 	}
 	git_config_set("core.filemode", filemode ? "true" : "false");
 
-	if (is_bare_repository())
-		git_config_set("core.bare", "true");
-	else {
-		const char *work_tree = get_git_work_tree();
-		git_config_set("core.bare", "false");
-		/* allow template config file to override the default */
-		if (log_all_ref_updates == LOG_REFS_UNSET)
-			git_config_set("core.logallrefupdates", "true");
-		if (needs_work_tree_config(original_git_dir, work_tree))
-			git_config_set("core.worktree", work_tree);
-	}
-
 	if (!reinit) {
 		/* Check if symlink is supported in the work tree */
 		path = git_path_buf(&buf, "tXXXXXX");
@@ -289,9 +281,23 @@ static int create_default_files(const char *template_path,
 
 		/* Check if the filesystem is case-insensitive */
 		path = git_path_buf(&buf, "CoNfIg");
-		if (!access(path, F_OK))
+		if (!access(path, F_OK)) {
 			git_config_set("core.ignorecase", "true");
+			ignore_case = 1;
+		}
 		probe_utf8_pathname_composition();
+	}
+
+	if (is_bare_repository())
+		git_config_set("core.bare", "true");
+	else {
+		const char *work_tree = get_git_work_tree();
+		git_config_set("core.bare", "false");
+		/* allow template config file to override the default */
+		if (log_all_ref_updates == LOG_REFS_UNSET)
+			git_config_set("core.logallrefupdates", "true");
+		if (needs_work_tree_config(original_git_dir, work_tree))
+			git_config_set("core.worktree", work_tree);
 	}
 
 	strbuf_release(&buf);
