@@ -762,6 +762,11 @@ test_path_is_missing () {
 
 # Tests for the hidden file attribute on windows
 test_path_is_hidden () {
+	if ! test_have_prereq MINGW
+	then
+		BUG "use of test_path_is_hidden without MINGW prerequisite"
+	fi
+
 	# Use the output of `attrib`, ignore the absolute path
 	case "$("$SYSTEMROOT"/system32/attrib "$1")" in
 	*H*?:*)		return 0;;
