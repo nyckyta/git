@@ -31,7 +31,7 @@ static void clear_reftable_log_record(struct reftable_log_record *log)
 static void fill_reftable_log_record(struct reftable_log_record *log)
 {
 	const char *info = git_committer_info(0);
-	struct ident_split split = {};
+	struct ident_split split = { NULL };
 	int result = split_ident_line(&split, info, strlen(info));
 	int sign = 1;
 	assert(0 == result);
@@ -230,7 +230,7 @@ static int reftable_transaction_abort(struct ref_store *ref_store,
 static int reftable_check_old_oid(struct ref_store *refs, const char *refname,
 				  struct object_id *want_oid)
 {
-	struct object_id out_oid = {};
+	struct object_id out_oid;
 	int out_flags = 0;
 	const char *resolved = refs_resolve_ref_unsafe(
 		refs, refname, RESOLVE_REF_READING, &out_oid, &out_flags);
@@ -287,14 +287,14 @@ static int write_transaction_table(struct reftable_writer *writer, void *arg)
 		log->message = u->msg;
 
 		if (u->flags & REF_HAVE_NEW) {
-			struct object_id out_oid = {};
+			struct object_id out_oid;
 			int out_flags = 0;
 			/* Memory owned by refs_resolve_ref_unsafe, no need to
 			 * free(). */
 			const char *resolved = refs_resolve_ref_unsafe(
 				transaction->ref_store, u->refname, 0, &out_oid,
 				&out_flags);
-			struct reftable_ref_record ref = {};
+			struct reftable_ref_record ref = { NULL };
 			ref.ref_name =
 				(char *)(resolved ? resolved : u->refname);
 			log->ref_name = ref.ref_name;
@@ -376,8 +376,8 @@ static int write_delete_refs_table(struct reftable_writer *writer, void *argv)
 	}
 
 	for (int i = 0; i < arg->refnames->nr; i++) {
-		struct reftable_log_record log = {};
-		struct reftable_ref_record current = {};
+		struct reftable_log_record log = { NULL };
+		struct reftable_ref_record current = { NULL };
 		fill_reftable_log_record(&log);
 		log.message = xstrdup(arg->logmsg);
 		log.new_hash = NULL;
@@ -455,10 +455,10 @@ static int write_create_symref_table(struct reftable_writer *writer, void *arg)
 	}
 
 	{
-		struct reftable_log_record log = {};
-		struct object_id new_oid = {};
-		struct object_id old_oid = {};
-		struct reftable_ref_record current = {};
+		struct reftable_log_record log = { NULL };
+		struct object_id new_oid;
+		struct object_id old_oid;
+		struct reftable_ref_record current = { NULL };
 		reftable_stack_read_ref(create->refs->stack, create->refname, &current);
 
 		fill_reftable_log_record(&log);
@@ -513,7 +513,7 @@ static int write_rename_table(struct reftable_writer *writer, void *argv)
 {
 	struct write_rename_arg *arg = (struct write_rename_arg *)argv;
 	uint64_t ts = reftable_stack_next_update_index(arg->stack);
-	struct reftable_ref_record ref = {};
+	struct reftable_ref_record ref = { NULL };
 	int err = reftable_stack_read_ref(arg->stack, arg->oldname, &ref);
 
 	if (err) {
@@ -531,7 +531,7 @@ static int write_rename_table(struct reftable_writer *writer, void *argv)
 	ref.update_index = ts;
 
 	{
-		struct reftable_ref_record todo[2] = {};
+		struct reftable_ref_record todo[2] = { { NULL } };
 		todo[0].ref_name = (char *)arg->oldname;
 		todo[0].update_index = ts;
 		/* leave todo[0] empty */
@@ -545,7 +545,7 @@ static int write_rename_table(struct reftable_writer *writer, void *argv)
 	}
 
 	if (ref.value != NULL) {
-		struct reftable_log_record todo[2] = {};
+		struct reftable_log_record todo[2] = { { NULL } };
 		fill_reftable_log_record(&todo[0]);
 		fill_reftable_log_record(&todo[1]);
 
@@ -688,12 +688,12 @@ reftable_for_each_reflog_ent_newest_first(struct ref_store *ref_store,
 					  const char *refname,
 					  each_reflog_ent_fn fn, void *cb_data)
 {
-	struct reftable_iterator it = {};
+	struct reftable_iterator it = { NULL };
 	struct git_reftable_ref_store *refs =
 		(struct git_reftable_ref_store *)ref_store;
 	struct reftable_merged_table *mt = NULL;
 	int err = 0;
-	struct reftable_log_record log = {};
+	struct reftable_log_record log = { NULL };
 
 	if (refs->err < 0) {
 		return refs->err;
@@ -712,8 +712,8 @@ reftable_for_each_reflog_ent_newest_first(struct ref_store *ref_store,
 		}
 
 		{
-			struct object_id old_oid = {};
-			struct object_id new_oid = {};
+			struct object_id old_oid;
+			struct object_id new_oid;
 			const char *full_committer = "";
 
 			hashcpy(old_oid.hash, log.old_hash);
@@ -744,7 +744,7 @@ reftable_for_each_reflog_ent_oldest_first(struct ref_store *ref_store,
 					  const char *refname,
 					  each_reflog_ent_fn fn, void *cb_data)
 {
-	struct reftable_iterator it = {};
+	struct reftable_iterator it = { NULL };
 	struct git_reftable_ref_store *refs =
 		(struct git_reftable_ref_store *)ref_store;
 	struct reftable_merged_table *mt = NULL;
@@ -760,7 +760,7 @@ reftable_for_each_reflog_ent_oldest_first(struct ref_store *ref_store,
 	err = reftable_merged_table_seek_log(mt, &it, refname);
 
 	while (err == 0) {
-		struct reftable_log_record log = {};
+		struct reftable_log_record log = { NULL };
 		err = reftable_iterator_next_log(it, &log);
 		if (err != 0) {
 			break;
@@ -780,8 +780,8 @@ reftable_for_each_reflog_ent_oldest_first(struct ref_store *ref_store,
 
 	for (int i = len; i--;) {
 		struct reftable_log_record *log = &logs[i];
-		struct object_id old_oid = {};
-		struct object_id new_oid = {};
+		struct object_id old_oid;
+		struct object_id new_oid;
 		const char *full_committer = "";
 
 		hashcpy(old_oid.hash, log->old_hash);
@@ -903,8 +903,8 @@ static int reftable_reflog_expire(struct ref_store *ref_store,
 	struct reflog_expiry_arg arg = {
 		.refs = refs,
 	};
-	struct reftable_log_record log = {};
-	struct reftable_iterator it = {};
+	struct reftable_log_record log = { NULL };
+	struct reftable_iterator it = { NULL };
 	int err = 0;
 	if (refs->err < 0) {
 		return refs->err;
@@ -917,8 +917,8 @@ static int reftable_reflog_expire(struct ref_store *ref_store,
 	}
 
 	while (1) {
-		struct object_id ooid = {};
-		struct object_id noid = {};
+		struct object_id ooid;
+		struct object_id noid;
 
 		int err = reftable_iterator_next_log(it, &log);
 		if (err < 0) {
@@ -950,7 +950,7 @@ static int reftable_read_raw_ref(struct ref_store *ref_store,
 {
 	struct git_reftable_ref_store *refs =
 		(struct git_reftable_ref_store *)ref_store;
-	struct reftable_ref_record ref = {};
+	struct reftable_ref_record ref = { NULL };
 	int err = 0;
 	if (refs->err < 0) {
 		return refs->err;
