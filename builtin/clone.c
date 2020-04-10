@@ -1110,7 +1110,7 @@ int cmd_clone(int argc, const char **argv, const char *prefix)
 	}
 
 	init_db(git_dir, real_git_dir, option_template,
-                GIT_HASH_UNKNOWN,
+		GIT_HASH_UNKNOWN,
 		DEFAULT_REF_STORAGE, /* XXX */
 		INIT_DB_QUIET);
 
