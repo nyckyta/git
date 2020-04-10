@@ -760,6 +760,20 @@ test_path_is_missing () {
 	fi
 }
 
+# Tests for the hidden file attribute on windows
+test_path_is_hidden () {
+	if ! test_have_prereq MINGW
+	then
+		BUG "use of test_path_is_hidden without MINGW prerequisite"
+	fi
+
+	# Use the output of `attrib`, ignore the absolute path
+	case "$("$SYSTEMROOT"/system32/attrib "$1")" in
+	*H*?:*)		return 0;;
+	esac
+	return 1
+}
+
 # test_line_count checks that a file has the number of lines it
 # ought to. For example:
 #
