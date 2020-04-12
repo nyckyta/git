@@ -601,10 +601,10 @@ static void reftable_log_record_copy_from(void *rec, const void *src_rec,
 		(const struct reftable_log_record *)src_rec;
 
 	*dst = *src;
-	dst->ref_name = xstrdup(dst->ref_name);
-	dst->email = xstrdup(dst->email);
-	dst->name = xstrdup(dst->name);
-	dst->message = xstrdup(dst->message);
+	dst->ref_name = xstrdup_or_null(dst->ref_name);
+	dst->email = xstrdup_or_null(dst->email);
+	dst->name = xstrdup_or_null(dst->name);
+	dst->message = xstrdup_or_null(dst->message);
 	if (dst->new_hash != NULL) {
 		dst->new_hash = reftable_malloc(hash_size);
 		memcpy(dst->new_hash, src->new_hash, hash_size);
