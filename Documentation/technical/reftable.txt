@@ -222,7 +222,7 @@ A 28-byte header appears at the beginning of the file:
 
 ....
 'REFT'
-uint8( version_number = 1 )
+uint8( version_number = 2 )
 uint24( block_size )
 uint64( min_update_index )
 uint64( max_update_index )
