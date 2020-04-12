@@ -190,7 +190,7 @@ files with more than one ref block must include the link:#Ref-index[ref
 index] to support fast lookup. Readers must be able to read both aligned
 and non-aligned files.
 
-Very small files (e.g. 1 only ref block) may omit `padding` and the ref
+Very small files (e.g. only one ref block) may omit `padding` and the ref
 index to reduce total file size.
 
 Header (version 1)
