@@ -52,6 +52,63 @@ struct ipc_data {
 	struct fsmonitor_daemon_state *state;
 };
 
+static void fsmonitor_wait_for_cookie(struct fsmonitor_daemon_state *state)
+{
+	int fd;
+	struct fsmonitor_cookie_item cookie;
+	const char *cookie_path;
+	struct strbuf cookie_filename = STRBUF_INIT;
+
+	strbuf_addstr(&cookie_filename, FSMONITOR_COOKIE_PREFIX);
+	strbuf_addf(&cookie_filename, "%i-%i", getpid(), state->cookie_seq++);
+	cookie.name = strbuf_detach(&cookie_filename, NULL);
+	cookie.seen = 0;
+	hashmap_entry_init(&cookie.entry, strhash(cookie.name));
+	pthread_mutex_init(&cookie.seen_lock, NULL);
+	pthread_cond_init(&cookie.seen_cond, NULL);
+
+	pthread_mutex_lock(&state->cookies_lock);
+	hashmap_add(&state->cookies, &cookie.entry);
+	pthread_mutex_unlock(&state->cookies_lock);
+	cookie_path = git_pathdup("%s", cookie.name);
+	fd = open(cookie_path, O_WRONLY | O_CREAT | O_EXCL, 0600);
+	if (fd >= 0) {
+		close(fd);
+		pthread_mutex_lock(&cookie.seen_lock);
+		while (!cookie.seen)
+			pthread_cond_wait(&cookie.seen_cond, &cookie.seen_lock);
+		cookie.seen = 0;
+		pthread_mutex_unlock(&cookie.seen_lock);
+		unlink_or_warn(cookie_path);
+	} else {
+		pthread_mutex_lock(&state->cookies_lock);
+		hashmap_remove(&state->cookies, &cookie.entry, NULL);
+		pthread_mutex_unlock(&state->cookies_lock);
+	}
+}
+
+void fsmonitor_cookie_seen_trigger(struct fsmonitor_daemon_state *state,
+				   const char *cookie_name)
+{
+	struct fsmonitor_cookie_item key;
+	struct fsmonitor_cookie_item *cookie;
+
+	hashmap_entry_init(&key.entry, strhash(cookie_name));
+	key.name = cookie_name;
+	cookie = hashmap_get_entry(&state->cookies, &key, entry, NULL);
+
+	if (cookie) {
+		pthread_mutex_lock(&cookie->seen_lock);
+		cookie->seen = 1;
+		pthread_cond_signal(&cookie->seen_cond);
+		pthread_mutex_unlock(&cookie->seen_lock);
+
+		pthread_mutex_lock(&state->cookies_lock);
+		hashmap_remove(&state->cookies, &cookie->entry, NULL);
+		pthread_mutex_unlock(&state->cookies_lock);
+	}
+}
+
 KHASH_INIT(str, const char *, int, 0, kh_str_hash_func, kh_str_hash_equal);
 
 static int handle_client(struct ipc_command_listener *data, const char *command,
@@ -108,6 +165,12 @@ static int handle_client(struct ipc_command_listener *data, const char *command,
 	}
 
 	strbuf_reset(&token);
+	/*
+	 * write out cookie file so the queue gets filled with all
+	 * the file system events that happen before the file gets written
+	 */
+	fsmonitor_wait_for_cookie(state);
+
 	pthread_mutex_lock(&state->queue_update_lock);
 	queue = state->first;
 	strbuf_addf(&token, "%"PRIu64"", state->latest_update);
@@ -161,7 +224,22 @@ int fsmonitor_special_path(struct fsmonitor_daemon_state *state,
 	if (was_deleted && len == 4)
 		return FSMONITOR_DAEMON_QUIT;
 
+	if (!was_deleted && len > 4 &&
+	    starts_with(path + 5, FSMONITOR_COOKIE_PREFIX))
+		string_list_append(&state->cookie_list, path + 5);
+
 	return 1;
+}
+
+static int cookies_cmp(const void *data, const struct hashmap_entry *he1,
+		     const struct hashmap_entry *he2, const void *keydata)
+{
+	const struct fsmonitor_cookie_item *a =
+		container_of(he1, const struct fsmonitor_cookie_item, entry);
+	const struct fsmonitor_cookie_item *b =
+		container_of(he2, const struct fsmonitor_cookie_item, entry);
+
+	return strcmp(a->name, keydata ? keydata : b->name);
 }
 
 #define FNV32_BASE ((unsigned int) 0x811c9dc5)
@@ -200,7 +278,9 @@ int fsmonitor_queue_path(struct fsmonitor_daemon_state *state,
 
 static int fsmonitor_run_daemon(int background)
 {
-	struct fsmonitor_daemon_state state = { { 0 } };
+	struct fsmonitor_daemon_state state = {
+		.cookie_list = STRING_LIST_INIT_DUP
+	};
 	struct ipc_data ipc_data = {
 		.data = {
 			.path = git_path_fsmonitor(),
@@ -213,7 +293,9 @@ static int fsmonitor_run_daemon(int background)
 		BUG(_("daemonize() not supported on this platform"));
 
 	hashmap_init(&state.paths, paths_cmp, NULL, 0);
+	hashmap_init(&state.cookies, cookies_cmp, NULL, 0);
 	pthread_mutex_init(&state.queue_update_lock, NULL);
+	pthread_mutex_init(&state.cookies_lock, NULL);
 	pthread_mutex_init(&state.initial_mutex, NULL);
 	pthread_cond_init(&state.initial_cond, NULL);
 
@@ -297,6 +379,9 @@ int cmd_fsmonitor__daemon(int argc, const char **argv, const char *prefix)
 			sleep_millisec(50);
 		return 0;
 	}
+
+	if (fsmonitor_daemon_is_running())
+		die("fsmonitor daemon is already running.");
 
 #ifdef GIT_WINDOWS_NATIVE
 	/* Windows cannot daemonize(); emulate it */

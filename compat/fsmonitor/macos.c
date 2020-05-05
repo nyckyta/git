@@ -6,9 +6,30 @@
  * See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93082 for details.
  */
 typedef unsigned int FSEventStreamCreateFlags;
-#define kFSEventStreamEventFlagItemRemoved 0x200
-#define kFSEventStreamEventFlagKernelDropped 0x004
-#define kFSEventStreamEventFlagUserDropped 0x002
+#define kFSEventStreamEventFlagNone               0x00000000
+#define kFSEventStreamEventFlagMustScanSubDirs    0x00000001
+#define kFSEventStreamEventFlagUserDropped        0x00000002
+#define kFSEventStreamEventFlagKernelDropped      0x00000004
+#define kFSEventStreamEventFlagEventIdsWrapped    0x00000008
+#define kFSEventStreamEventFlagHistoryDone        0x00000010
+#define kFSEventStreamEventFlagRootChanged        0x00000020
+#define kFSEventStreamEventFlagMount              0x00000040
+#define kFSEventStreamEventFlagUnmount            0x00000080
+#define kFSEventStreamEventFlagItemCreated        0x00000100
+#define kFSEventStreamEventFlagItemRemoved        0x00000200
+#define kFSEventStreamEventFlagItemInodeMetaMod   0x00000400
+#define kFSEventStreamEventFlagItemRenamed        0x00000800
+#define kFSEventStreamEventFlagItemModified       0x00001000
+#define kFSEventStreamEventFlagItemFinderInfoMod  0x00002000
+#define kFSEventStreamEventFlagItemChangeOwner    0x00004000
+#define kFSEventStreamEventFlagItemXattrMod       0x00008000
+#define kFSEventStreamEventFlagItemIsFile         0x00010000
+#define kFSEventStreamEventFlagItemIsDir          0x00020000
+#define kFSEventStreamEventFlagItemIsSymlink      0x00040000
+#define kFSEventStreamEventFlagOwnEvent           0x00080000
+#define kFSEventStreamEventFlagItemIsHardlink     0x00100000
+#define kFSEventStreamEventFlagItemIsLastHardlink 0x00200000
+#define kFSEventStreamEventFlagItemCloned         0x00400000
 
 typedef struct __FSEventStream *FSEventStreamRef;
 typedef const FSEventStreamRef ConstFSEventStreamRef;
@@ -79,6 +100,65 @@ void FSEventStreamRelease(FSEventStreamRef stream);
 static struct strbuf watch_dir = STRBUF_INIT;
 static FSEventStreamRef stream;
 
+static void trace2_message(const char *key, const char *message)
+{
+	trace2_data_string("fsmonitor-macos", the_repository, key, message);
+}
+
+static void log_flags_set(struct strbuf *dir, const FSEventStreamEventFlags flag) {
+	struct strbuf msg = STRBUF_INIT;
+	strbuf_addf(&msg, "%s flags: %u = ", dir->buf, flag);
+
+	if (flag & kFSEventStreamEventFlagMustScanSubDirs)
+		strbuf_addstr(&msg, "MustScanSubDirs|");
+	if (flag & kFSEventStreamEventFlagUserDropped)
+		strbuf_addstr(&msg, "UserDropped|");
+	if (flag & kFSEventStreamEventFlagKernelDropped)
+		strbuf_addstr(&msg, "KernelDropped|");
+	if (flag & kFSEventStreamEventFlagEventIdsWrapped)
+		strbuf_addstr(&msg, "EventIdsWrapped|");
+	if (flag & kFSEventStreamEventFlagHistoryDone)
+		strbuf_addstr(&msg, "HistoryDone|");
+	if (flag & kFSEventStreamEventFlagRootChanged)
+		strbuf_addstr(&msg, "RootChanged|");
+	if (flag & kFSEventStreamEventFlagMount)
+		strbuf_addstr(&msg, "Mount|");
+	if (flag & kFSEventStreamEventFlagUnmount)
+		strbuf_addstr(&msg, "Unmount|");
+	if (flag & kFSEventStreamEventFlagItemChangeOwner)
+		strbuf_addstr(&msg, "ItemChangeOwner|");
+	if (flag & kFSEventStreamEventFlagItemCreated)
+		strbuf_addstr(&msg, "ItemCreated|");
+	if (flag & kFSEventStreamEventFlagItemFinderInfoMod)
+		strbuf_addstr(&msg, "ItemFinderInfoMod|");
+	if (flag & kFSEventStreamEventFlagItemInodeMetaMod)
+		strbuf_addstr(&msg, "ItemInodeMetaMod|");
+	if (flag & kFSEventStreamEventFlagItemIsDir)
+		strbuf_addstr(&msg, "ItemIsDir|");
+	if (flag & kFSEventStreamEventFlagItemIsFile)
+		strbuf_addstr(&msg, "ItemIsFile|");
+	if (flag & kFSEventStreamEventFlagItemIsHardlink)
+		strbuf_addstr(&msg, "ItemIsHardlink|");
+	if (flag & kFSEventStreamEventFlagItemIsLastHardlink)
+		strbuf_addstr(&msg, "ItemIsLastHardlink|");
+	if (flag & kFSEventStreamEventFlagItemIsSymlink)
+		strbuf_addstr(&msg, "ItemIsSymlink|");
+	if (flag & kFSEventStreamEventFlagItemModified)
+		strbuf_addstr(&msg, "ItemModified|");
+	if (flag & kFSEventStreamEventFlagItemRemoved)
+		strbuf_addstr(&msg, "ItemRemoved|");
+	if (flag & kFSEventStreamEventFlagItemRenamed)
+		strbuf_addstr(&msg, "ItemRenamed|");
+	if (flag & kFSEventStreamEventFlagItemXattrMod)
+		strbuf_addstr(&msg, "ItemXattrMod|");
+	if (flag & kFSEventStreamEventFlagOwnEvent)
+		strbuf_addstr(&msg, "OwnEvent|");
+	if (flag & kFSEventStreamEventFlagItemCloned)
+		strbuf_addstr(&msg, "ItemCloned|");
+
+	trace2_message("fsevent", msg.buf);
+}
+
 static void fsevent_callback(ConstFSEventStreamRef streamRef,
 			     void *ctx,
 			     size_t num_of_events,
@@ -87,6 +167,7 @@ static void fsevent_callback(ConstFSEventStreamRef streamRef,
 			     const FSEventStreamEventId event_ids[])
 {
 	int i;
+	struct stat st;
 	char **paths = (char **)event_paths;
 	struct fsmonitor_queue_item dummy, *queue = &dummy;
 	uint64_t time = getnanotime();
@@ -98,45 +179,77 @@ static void fsevent_callback(ConstFSEventStreamRef streamRef,
 		time = state->latest_update + 1;
 
 	for (i = 0; i < num_of_events; i++) {
+		int special;
+
+		/* TODO: rename work_str -> path */
+		/* TODO: use `paths[i] + watch_dir.len` directly */
 		strbuf_addstr(&work_str, paths[i]);
 		strbuf_remove(&work_str, 0, watch_dir.len);
 		if (strlen(paths[i]) != watch_dir.len)
 			strbuf_remove(&work_str, 0, 1);
 
-		if (!strcmp(work_str.buf, ".git") && (event_flags[i] & kFSEventStreamEventFlagItemRemoved)) {
-			trace2_printf(".git directory being removed so quitting\n");
-			exit(0);
-		}
+		special = fsmonitor_special_path(state, work_str.buf, work_str.len,
+						 (event_flags[i] & (kFSEventStreamEventFlagRootChanged | kFSEventStreamEventFlagItemRemoved)) &&
+						 lstat(paths[i], &st));
 
 		if ((event_flags[i] & kFSEventStreamEventFlagKernelDropped) ||
 		    (event_flags[i] & kFSEventStreamEventFlagUserDropped)) {
-			trace2_printf("Dropped event %llu flags %u\n", event_ids[i], event_flags[i]);
+			trace2_message("message", "Dropped event");
 			fsmonitor_queue_path(state, &queue, "/", 1, time);
 		}
 
-		if (strcmp(work_str.buf, ".git") && !starts_with(work_str.buf, ".git/")) {
-			trace2_printf("Change %llu in '%s' flags %u\n", event_ids[i], work_str.buf, event_flags[i]);
-			fsmonitor_queue_path(state, &queue,
-					     work_str.buf, work_str.len, time);
-		} else {
-			trace2_printf("Skipping %llu in '%s' flags %u\n", event_ids[i], work_str.buf, event_flags[i]);
+		if (!special) {
+			log_flags_set(&work_str, event_flags[i]);
+
+			/* TODO: fsevent could be marked as both a file and directory */
+			if ((event_flags[i] & kFSEventStreamEventFlagItemIsFile) &&
+			    fsmonitor_queue_path(state, &queue, work_str.buf,
+						 work_str.len, time) < 0) {
+				state->error_code = -1;
+				error("could not queue '%s'; exiting",
+				      work_str.buf);
+				fsmonitor_listen_stop(state);
+				return;
+			} else if (event_flags[i] & kFSEventStreamEventFlagItemIsDir) {
+				strbuf_addch(&work_str, '/');
+				if (fsmonitor_queue_path(state, &queue,
+							 work_str.buf, work_str.len,
+							 time) < 0) {
+					state->error_code = -1;
+					error("could not queue '%s'; exiting",
+					      work_str.buf);
+					fsmonitor_listen_stop(state);
+					return;
+				}
+			}
+		} else if (special == FSMONITOR_DAEMON_QUIT) {
+			trace2_message("message", ".git directory being removed so quitting.");
+			exit(0);
+
+		} else if (special < 0) {
+			fsmonitor_listen_stop(state);
+			return;
 		}
 
 		strbuf_reset(&work_str);
 	}
 
-	/* Shouldn't happen; defensive programming */
-	if (queue == &dummy)
-		return;
+	/* Only update the queue if it changed */
+	if (queue != &dummy) {
+		pthread_mutex_lock(&state->queue_update_lock);
+		if (state->first)
+			state->first->previous = dummy.previous;
+		dummy.previous->next = state->first;
+		state->first = queue;
+		state->latest_update = time;
+		pthread_mutex_unlock(&state->queue_update_lock);
+	}
 
-	pthread_mutex_lock(&state->queue_update_lock);
-	if (state->first)
-		state->first->previous = dummy.previous;
-	dummy.previous->next = state->first;
-	state->first = queue;
-	state->latest_update = time;
-	pthread_mutex_unlock(&state->queue_update_lock);
+	for (i = 0; i < state->cookie_list.nr; i++) {
+		fsmonitor_cookie_seen_trigger(state, state->cookie_list.items[i].string);
+	}
 
+	string_list_clear(&state->cookie_list, 0);
 	strbuf_release(&work_str);
 }
 
