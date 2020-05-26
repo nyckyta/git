@@ -149,6 +149,15 @@ static int paths_cmp(const void *data, const struct hashmap_entry *he1,
 	return strcmp(a->path, keydata ? keydata : b->path);
 }
 
+int fsmonitor_special_path(struct fsmonitor_daemon_state *state,
+			   const char *path, size_t len)
+{
+	if (len < 4 || fspathncmp(path, ".git", 4) || (path[4] && path[4] != '/'))
+		return 0;
+
+	return 1;
+}
+
 #define FNV32_BASE ((unsigned int) 0x811c9dc5)
 #define FNV32_PRIME ((unsigned int) 0x01000193)
 
