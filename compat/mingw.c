@@ -969,7 +969,8 @@ static int has_valid_directory_prefix(wchar_t *wfilename)
 	return 1;
 }
 
-static int get_reparse_point_link_len(const WCHAR *wpath, DWORD *ptag);
+static int readlink_1(const WCHAR *wpath, char *tmpbuf, int *plen, DWORD *ptag);
+
 int mingw_lstat(const char *file_name, struct stat *buf)
 {
 	WIN32_FILE_ATTRIBUTE_DATA fdata;
@@ -989,10 +990,12 @@ int mingw_lstat(const char *file_name, struct stat *buf)
 	}
 
 	if (GetFileAttributesExW(wfilename, GetFileExInfoStandard, &fdata)) {
-		/* for reparse points, use get_reparse_point_link_len to get the link tag and length */
+		/* for reparse points, get the link tag and length */
 		if (fdata.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
-			link_len = get_reparse_point_link_len(wfilename, &reparse_tag);
-			if (link_len < 0)
+			char tmpbuf[MAX_LONG_PATH];
+
+			if (readlink_1(wfilename, tmpbuf, &link_len,
+				       &reparse_tag) < 0)
 				return -1;
 		}
 		buf->st_ino = 0;
@@ -2969,10 +2972,11 @@ typedef struct _REPARSE_DATA_BUFFER {
 } REPARSE_DATA_BUFFER, *PREPARSE_DATA_BUFFER;
 #endif
 
-static int get_reparse_point(const WCHAR *wpath, REPARSE_DATA_BUFFER *b, size_t siz, WCHAR **pwbuf)
+static int readlink_1(const WCHAR *wpath, char *tmpbuf, int *plen, DWORD *ptag)
 {
 	HANDLE handle;
 	WCHAR *wbuf;
+	REPARSE_DATA_BUFFER *b = alloca(MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
 	DWORD dummy;
 
 	/* read reparse point data */
@@ -2985,7 +2989,7 @@ static int get_reparse_point(const WCHAR *wpath, REPARSE_DATA_BUFFER *b, size_t 
 		return -1;
 	}
 	if (!DeviceIoControl(handle, FSCTL_GET_REPARSE_POINT, NULL, 0, b,
-			siz, &dummy, NULL)) {
+			MAXIMUM_REPARSE_DATA_BUFFER_SIZE, &dummy, NULL)) {
 		errno = err_win_to_posix(GetLastError());
 		CloseHandle(handle);
 		return -1;
@@ -2993,7 +2997,7 @@ static int get_reparse_point(const WCHAR *wpath, REPARSE_DATA_BUFFER *b, size_t 
 	CloseHandle(handle);
 
 	/* get target path for symlinks or mount points (aka 'junctions') */
-	switch (b->ReparseTag) {
+	switch ((*ptag = b->ReparseTag)) {
 	case IO_REPARSE_TAG_SYMLINK:
 		wbuf = (WCHAR*) (((char*) b->SymbolicLinkReparseBuffer.PathBuffer)
 				+ b->SymbolicLinkReparseBuffer.SubstituteNameOffset);
@@ -3007,52 +3011,28 @@ static int get_reparse_point(const WCHAR *wpath, REPARSE_DATA_BUFFER *b, size_t 
 				+ b->MountPointReparseBuffer.SubstituteNameLength) = 0;
 		break;
 	default:
-		wbuf = NULL;
-		break;
-	}
-
-	*pwbuf = wbuf;
-	return 0;
-}
-
-static int get_reparse_point_link_len(const WCHAR *wpath, DWORD *ptag)
-{
-	WCHAR *wbuf;
-	REPARSE_DATA_BUFFER *b = alloca(MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
-	int len;
-
-	if (get_reparse_point(wpath, b, MAXIMUM_REPARSE_DATA_BUFFER_SIZE, &wbuf) < 0)
+		errno = EINVAL;
 		return -1;
-	if (wbuf == NULL) {
-		*ptag = b->ReparseTag;
-		return MAX_LONG_PATH; /* return value for compatibility */
 	}
 
-	len = WideCharToMultiByte(CP_UTF8, 0, normalize_ntpath(wbuf), -1, 0, 0, NULL, NULL);
-	if (len) {
-		*ptag = b->ReparseTag;
-		return len - 1;
-	}
-	errno = ERANGE;
-	return -1;
+	if ((*plen =
+	     xwcstoutf(tmpbuf, normalize_ntpath(wbuf), MAX_LONG_PATH)) <  0)
+		return -1;
+	return 0;
 }
 
 int readlink(const char *path, char *buf, size_t bufsiz)
 {
-	WCHAR wpath[MAX_LONG_PATH], *wbuf;
-	REPARSE_DATA_BUFFER *b = alloca(MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
+	WCHAR wpath[MAX_LONG_PATH];
 	char tmpbuf[MAX_LONG_PATH];
 	int len;
+	DWORD tag;
 
 	if (xutftowcs_long_path(wpath, path) < 0)
 		return -1;
 
-	if (get_reparse_point(wpath, b, MAXIMUM_REPARSE_DATA_BUFFER_SIZE, &wbuf) < 0)
+	if (readlink_1(wpath, tmpbuf, &len, &tag) < 0)
 		return -1;
-	if (wbuf == NULL) {
-		errno = EINVAL;
-		return -1;
-	}
 
 	/*
 	 * Adapt to strange readlink() API: Copy up to bufsiz *bytes*, potentially
@@ -3061,8 +3041,6 @@ int readlink(const char *path, char *buf, size_t bufsiz)
 	 * so convert to a (hopefully large enough) temporary buffer, then memcpy
 	 * the requested number of bytes (including '\0' for robustness).
 	 */
-	if ((len = xwcstoutf(tmpbuf, normalize_ntpath(wbuf), MAX_LONG_PATH)) < 0)
-		return -1;
 	memcpy(buf, tmpbuf, min(bufsiz, len + 1));
 	return min(bufsiz, len);
 }
