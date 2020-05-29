@@ -125,17 +125,16 @@ static void fsevent_callback(ConstFSEventStreamRef streamRef,
 		strbuf_reset(&work_str);
 	}
 
-	/* Shouldn't happen; defensive programming */
-	if (queue == &dummy)
-		return;
-
-	pthread_mutex_lock(&state->queue_update_lock);
-	if (state->first)
-		state->first->previous = dummy.previous;
-	dummy.previous->next = state->first;
-	state->first = queue;
-	state->latest_update = time;
-	pthread_mutex_unlock(&state->queue_update_lock);
+	/* Only update the queue if it changed */
+	if (queue != &dummy) {
+		pthread_mutex_lock(&state->queue_update_lock);
+		if (state->first)
+			state->first->previous = dummy.previous;
+		dummy.previous->next = state->first;
+		state->first = queue;
+		state->latest_update = time;
+		pthread_mutex_unlock(&state->queue_update_lock);
+	}
 
 	for (i = 0; i < state->cookie_list.nr; i++) {
 		fsmonitor_cookie_seen_trigger(state, state->cookie_list.items[i].string);
