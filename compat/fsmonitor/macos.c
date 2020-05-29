@@ -93,7 +93,6 @@ static void fsevent_callback(ConstFSEventStreamRef streamRef,
 	struct fsmonitor_queue_item dummy, *queue = &dummy;
 	uint64_t time = getnanotime();
 	struct fsmonitor_daemon_state *state = ctx;
-	struct strbuf work_str = STRBUF_INIT;
 
 	/* Ensure strictly increasing timestamps */
 	if (time <= state->latest_update)
@@ -101,13 +100,15 @@ static void fsevent_callback(ConstFSEventStreamRef streamRef,
 
 	for (i = 0; i < num_of_events; i++) {
 		int special;
+		const char *path = paths[i] + watch_dir.len;
+		size_t len = strlen(path);
 
-		strbuf_addstr(&work_str, paths[i]);
-		strbuf_remove(&work_str, 0, watch_dir.len);
-		if (strlen(paths[i]) != watch_dir.len)
-			strbuf_remove(&work_str, 0, 1);
+		if (*path == '/') {
+			path++;
+			len--;
+		}
 
-		special = fsmonitor_special_path(state, work_str.buf, work_str.len,
+		special = fsmonitor_special_path(state, path, len,
 						 (event_flags[i] & (kFSEventStreamEventFlagRootChanged | kFSEventStreamEventFlagItemRemoved)) &&
 						 lstat(paths[i], &st));
 
@@ -118,11 +119,10 @@ static void fsevent_callback(ConstFSEventStreamRef streamRef,
 		}
 
 		if (!special && fsmonitor_queue_path(state, &queue,
-						     work_str.buf, work_str.len,
-						     time) < 0) {
+						     path, len, time) < 0) {
 			state->error_code = -1;
 			error("could not queue '%s'; exiting",
-			      work_str.buf);
+			      path);
 			fsmonitor_listen_stop(state);
 			return;
 		} else if (special == FSMONITOR_DAEMON_QUIT) {
@@ -133,8 +133,6 @@ static void fsevent_callback(ConstFSEventStreamRef streamRef,
 			fsmonitor_listen_stop(state);
 			return;
 		}
-
-		strbuf_reset(&work_str);
 	}
 
 	/* Only update the queue if it changed */
@@ -153,7 +151,6 @@ static void fsevent_callback(ConstFSEventStreamRef streamRef,
 	}
 
 	string_list_clear(&state->cookie_list, 0);
-	strbuf_release(&work_str);
 }
 
 struct fsmonitor_daemon_state *fsmonitor_listen(struct fsmonitor_daemon_state *state)
