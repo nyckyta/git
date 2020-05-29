@@ -53,8 +53,10 @@ struct fsmonitor_daemon_state *fsmonitor_listen(struct fsmonitor_daemon_state *s
 		uint64_t time = getnanotime();
 
 		/* Ensure strictly increasing timestamps */
+		pthread_mutex_lock(&state->queue_update_lock);
 		if (time <= state->latest_update)
 			time = state->latest_update + 1;
+		pthread_mutex_unlock(&state->queue_update_lock);
 
 		if (!ReadDirectoryChangesW(dir, buffer, sizeof(buffer), TRUE,
 					   FILE_NOTIFY_CHANGE_FILE_NAME |
