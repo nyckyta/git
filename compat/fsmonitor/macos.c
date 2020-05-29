@@ -170,8 +170,10 @@ static void fsevent_callback(ConstFSEventStreamRef streamRef,
 	struct fsmonitor_daemon_state *state = ctx;
 
 	/* Ensure strictly increasing timestamps */
+	pthread_mutex_lock(&state->queue_update_lock);
 	if (time <= state->latest_update)
 		time = state->latest_update + 1;
+	pthread_mutex_unlock(&state->queue_update_lock);
 
 	for (i = 0; i < num_of_events; i++) {
 		int special;
