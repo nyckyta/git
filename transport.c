@@ -283,10 +283,12 @@ static struct ref *handshake(struct transport *transport, int for_push,
 	struct git_transport_data *data = transport->data;
 	struct ref *refs = NULL;
 	struct packet_reader reader;
+	char buf[LARGE_PACKET_MAX];
 
 	connect_setup(transport, for_push);
 
 	packet_reader_init(&reader, data->fd[0], NULL, 0,
+			   buf, sizeof(buf),
 			   PACKET_READ_CHOMP_NEWLINE |
 			   PACKET_READ_GENTLE_ON_EOF |
 			   PACKET_READ_DIE_ON_ERR_PACKET);

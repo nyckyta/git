@@ -211,11 +211,12 @@ static struct ref *parse_git_refs(struct discovery *heads, int for_push)
 {
 	struct ref *list = NULL;
 	struct packet_reader reader;
+	char b[LARGE_PACKET_MAX];
 
-	packet_reader_init(&reader, -1, heads->buf, heads->len,
+	packet_reader_init(&reader, -1, heads->buf, heads->len, b, sizeof(b),
 			   PACKET_READ_CHOMP_NEWLINE |
-			   PACKET_READ_GENTLE_ON_EOF |
-			   PACKET_READ_DIE_ON_ERR_PACKET);
+				   PACKET_READ_GENTLE_ON_EOF |
+				   PACKET_READ_DIE_ON_ERR_PACKET);
 
 	heads->version = discover_version(&reader);
 	switch (heads->version) {
@@ -346,6 +347,7 @@ static void check_smart_http(struct discovery *d, const char *service,
 {
 	const char *p;
 	struct packet_reader reader;
+	char b[LARGE_PACKET_MAX];
 
 	/*
 	 * If we don't see x-$service-advertisement, then it's not smart-http.
@@ -357,9 +359,9 @@ static void check_smart_http(struct discovery *d, const char *service,
 	    strcmp(p, "-advertisement"))
 		return;
 
-	packet_reader_init(&reader, -1, d->buf, d->len,
+	packet_reader_init(&reader, -1, d->buf, d->len, b, sizeof(b),
 			   PACKET_READ_CHOMP_NEWLINE |
-			   PACKET_READ_DIE_ON_ERR_PACKET);
+				   PACKET_READ_DIE_ON_ERR_PACKET);
 	if (packet_reader_read(&reader) != PACKET_READ_NORMAL)
 		die(_("invalid server response; expected service, got flush packet"));
 

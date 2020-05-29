@@ -29,9 +29,10 @@ static void pack(int argc, const char **argv)
 static void unpack(void)
 {
 	struct packet_reader reader;
-	packet_reader_init(&reader, 0, NULL, 0,
+	char b[LARGE_PACKET_MAX];
+	packet_reader_init(&reader, 0, NULL, 0, b, sizeof(b),
 			   PACKET_READ_GENTLE_ON_EOF |
-			   PACKET_READ_CHOMP_NEWLINE);
+				   PACKET_READ_CHOMP_NEWLINE);
 
 	while (packet_reader_read(&reader) != PACKET_READ_EOF) {
 		switch (reader.status) {
@@ -53,9 +54,10 @@ static void unpack(void)
 static void unpack_sideband(void)
 {
 	struct packet_reader reader;
-	packet_reader_init(&reader, 0, NULL, 0,
+	char b[LARGE_PACKET_MAX];
+	packet_reader_init(&reader, 0, NULL, 0, b, sizeof(b),
 			   PACKET_READ_GENTLE_ON_EOF |
-			   PACKET_READ_CHOMP_NEWLINE);
+				   PACKET_READ_CHOMP_NEWLINE);
 
 	while (packet_reader_read(&reader) != PACKET_READ_EOF) {
 		int band;

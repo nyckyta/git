@@ -252,11 +252,12 @@ static int find_common(struct fetch_negotiator *negotiator,
 	struct strbuf req_buf = STRBUF_INIT;
 	size_t state_len = 0;
 	struct packet_reader reader;
+	char line[LARGE_PACKET_MAX];
 
 	if (args->stateless_rpc && multi_ack == 1)
 		die(_("--stateless-rpc requires multi_ack_detailed"));
 
-	packet_reader_init(&reader, fd[0], NULL, 0,
+	packet_reader_init(&reader, fd[0], NULL, 0, line, sizeof(line),
 			   PACKET_READ_CHOMP_NEWLINE |
 			   PACKET_READ_DIE_ON_ERR_PACKET);
 
@@ -1443,6 +1444,7 @@ static struct ref *do_fetch_pack_v2(struct fetch_pack_args *args,
 	enum fetch_state state = FETCH_CHECK_LOCAL;
 	struct oidset common = OIDSET_INIT;
 	struct packet_reader reader;
+	char line[LARGE_PACKET_MAX];
 	int in_vain = 0, negotiation_started = 0;
 	int haves_to_send = INITIAL_FLUSH;
 	struct fetch_negotiator negotiator_alloc;
@@ -1456,6 +1458,7 @@ static struct ref *do_fetch_pack_v2(struct fetch_pack_args *args,
 	}
 
 	packet_reader_init(&reader, fd[0], NULL, 0,
+			   line, sizeof(line),
 			   PACKET_READ_CHOMP_NEWLINE |
 			   PACKET_READ_DIE_ON_ERR_PACKET);
 	if (git_env_bool("GIT_TEST_SIDEBAND_ALL", 1) &&

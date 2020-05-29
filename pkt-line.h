@@ -104,12 +104,7 @@ enum packet_read_status packet_read_with_status(int fd, char **src_buffer,
  * subsequent calls). If the size parameter is not NULL, the length of the
  * packet is written to it.
  */
-char *packet_read_line(int fd, int *size);
-/*
- * Version of `packet_read_line()` that uses a supplied buffer
- * rather than a static buffer.
- */
-char *packet_read_line_r(int fd, int *size, char *buffer, size_t buffer_size);
+char *packet_read_line(int fd, int *size, char *buffer, size_t buffer_size);
 
 /*
  * Convenience wrapper for packet_read that sets the PACKET_READ_GENTLE_ON_EOF
@@ -120,19 +115,15 @@ char *packet_read_line_r(int fd, int *size, char *buffer, size_t buffer_size);
  * overwritten by subsequent calls). If the size parameter is not NULL, the
  * length of the packet is written to it.
  */
-int packet_read_line_gently(int fd, int *size, char **dst_line);
-/*
- * Version of `packet_read_line_gently()` that uses a supplied buffer
- * rather than a static buffer.
- */
-int packet_read_line_gently_r(int fd, int *size, char **dst_line,
-			      char *buffer, size_t buffer_size);
+int packet_read_line_gently(int fd, int *size, char **dst_line, char *buffer,
+			    size_t buffer_size);
 
 /*
  * Same as packet_read_line, but read from a buf rather than a descriptor;
  * see packet_read for details on how src_* is used.
  */
-char *packet_read_line_buf(char **src_buf, size_t *src_len, int *size);
+char *packet_read_line_buf(int fd, char **src, size_t *src_len, int *dst_len,
+			   char *buffer, size_t buffer_size);
 
 /*
  * Reads a stream of variable sized packets until a flush packet is detected.
@@ -195,6 +186,7 @@ struct packet_reader {
  */
 void packet_reader_init(struct packet_reader *reader, int fd,
 			char *src_buffer, size_t src_len,
+			char *dst_buffer, size_t dst_len,
 			int options);
 
 /*
@@ -228,7 +220,7 @@ enum packet_read_status packet_reader_peek(struct packet_reader *reader);
  * source files.  This makes threaded use of packet_ routines unsafe.
  * TODO Eventually, we should phase this out with a proper API.
  */
-extern char packet_buffer[LARGE_PACKET_MAX];
+//extern char packet_buffer[LARGE_PACKET_MAX];
 
 struct packet_writer {
 	int dest_fd;

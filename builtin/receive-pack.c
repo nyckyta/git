@@ -1933,6 +1933,7 @@ int cmd_receive_pack(int argc, const char **argv, const char *prefix)
 	struct oid_array ref = OID_ARRAY_INIT;
 	struct shallow_info si;
 	struct packet_reader reader;
+	char b[LARGE_PACKET_MAX];
 
 	struct option options[] = {
 		OPT__QUIET(&quiet, N_("quiet")),
@@ -1995,9 +1996,9 @@ int cmd_receive_pack(int argc, const char **argv, const char *prefix)
 	if (advertise_refs)
 		return 0;
 
-	packet_reader_init(&reader, 0, NULL, 0,
+	packet_reader_init(&reader, 0, NULL, 0, b, sizeof(b),
 			   PACKET_READ_CHOMP_NEWLINE |
-			   PACKET_READ_DIE_ON_ERR_PACKET);
+				   PACKET_READ_DIE_ON_ERR_PACKET);
 
 	if ((commands = read_head_info(&reader, &shallow)) != NULL) {
 		const char *unpack_status = NULL;

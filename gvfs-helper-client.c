@@ -239,7 +239,7 @@ static void gh_client__update_packed_git(const char *line)
 /*
  * CAP_OBJECTS verbs return the same format response:
  *
- *    <odb> 
+ *    <odb>
  *    <data>*
  *    <status>
  *    <flush>
@@ -275,7 +275,7 @@ static int gh_client__objects__receive_response(
 {
 	enum gh_client__created ghc = GHC__CREATED__NOTHING;
 	const char *v1;
-	char *line;
+	char *line, buf[LARGE_PACKET_MAX];
 	int len;
 	int nr_loose = 0;
 	int nr_packfile = 0;
@@ -286,7 +286,8 @@ static int gh_client__objects__receive_response(
 		 * Warning: packet_read_line_gently() calls die()
 		 * despite the _gently moniker.
 		 */
-		len = packet_read_line_gently(process->out, NULL, &line);
+		len = packet_read_line_gently(process->out, NULL, &line, buf,
+					      sizeof(buf));
 		if ((len < 0) || !line)
 			break;
 

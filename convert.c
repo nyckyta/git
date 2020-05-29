@@ -923,7 +923,7 @@ done:
 int async_query_available_blobs(const char *cmd, struct string_list *available_paths)
 {
 	int err;
-	char *line;
+	char *line, buf[LARGE_PACKET_MAX];
 	struct cmd2process *entry;
 	struct child_process *process;
 	struct strbuf filter_status = STRBUF_INIT;
@@ -947,7 +947,8 @@ int async_query_available_blobs(const char *cmd, struct string_list *available_p
 	if (err)
 		goto done;
 
-	while ((line = packet_read_line(process->out, NULL))) {
+	while ((line = packet_read_line(process->out, NULL, buf,
+					sizeof(buf)))) {
 		const char *path;
 		if (skip_prefix(line, "pathname=", &path))
 			string_list_insert(available_paths, xstrdup(path));

@@ -1023,7 +1023,7 @@ static int gh__curl_progress_cb(void *clientp,
 	 * If we pass zero for the total to the "struct progress" API, we
 	 * get simple numbers rather than percentages.  So our progress
 	 * output format may vary depending.
-	 *     
+	 *
 	 * It is unclear if CURL will give us a final callback after
 	 * everything is finished, so we leave the progress handle open
 	 * and let the caller issue the final stop_progress().
@@ -3742,7 +3742,7 @@ static enum gh__error_code do_server_subprocess__objects(const char *verb_line)
 	struct object_id oid;
 	struct string_list result_list = STRING_LIST_INIT_DUP;
 	enum gh__error_code ec = GH__ERROR_CODE__OK;
-	char *line;
+	char *line, b[LARGE_PACKET_MAX];
 	int len;
 	int err;
 	int k;
@@ -3766,7 +3766,8 @@ static enum gh__error_code do_server_subprocess__objects(const char *verb_line)
 	case GH__OBJECTS_MODE__GET:
 	case GH__OBJECTS_MODE__POST:
 		while (1) {
-			len = packet_read_line_gently(0, NULL, &line);
+			len = packet_read_line_gently(0, NULL, &line,
+						      b, sizeof(b));
 			if (len < 0 || !line)
 				break;
 
@@ -3801,7 +3802,8 @@ static enum gh__error_code do_server_subprocess__objects(const char *verb_line)
 	case GH__OBJECTS_MODE__PREFETCH:
 		/* get optional timestamp line */
 		while (1) {
-			len = packet_read_line_gently(0, NULL, &line);
+			len = packet_read_line_gently(0, NULL, &line,
+						      b, sizeof(b));
 			if (len < 0 || !line)
 				break;
 
@@ -3826,7 +3828,7 @@ static enum gh__error_code do_server_subprocess__objects(const char *verb_line)
 		ec = GH__ERROR_CODE__SUBPROCESS_SYNTAX;
 		goto cleanup;
 	}
-	
+
 	for (k = 0; k < result_list.nr; k++)
 		if (packet_write_fmt_gently(1, "%s\n",
 					    result_list.items[k].string))
@@ -3891,12 +3893,12 @@ static int do_protocol_handshake(void)
 {
 #define OUR_SUBPROCESS_VERSION "1"
 
-	char *line;
+	char *line, b[LARGE_PACKET_MAX];
 	int len;
 	int k;
 	int b_support_our_version = 0;
 
-	len = packet_read_line_gently(0, NULL, &line);
+	len = packet_read_line_gently(0, NULL, &line, b, sizeof(b));
 	if (len < 0 || !line || strcmp(line, "gvfs-helper-client")) {
 		error("server: subprocess welcome handshake failed: %s", line);
 		return -1;
@@ -3904,7 +3906,7 @@ static int do_protocol_handshake(void)
 
 	while (1) {
 		const char *v;
-		len = packet_read_line_gently(0, NULL, &line);
+		len = packet_read_line_gently(0, NULL, &line, b, sizeof(b));
 		if (len < 0 || !line)
 			break;
 		if (!skip_prefix(line, "version=", &v)) {
@@ -3932,7 +3934,7 @@ static int do_protocol_handshake(void)
 		const char *v;
 		int k;
 
-		len = packet_read_line_gently(0, NULL, &line);
+		len = packet_read_line_gently(0, NULL, &line, b, sizeof(b));
 		if (len < 0 || !line)
 			break;
 		if (!skip_prefix(line, "capability=", &v)) {
@@ -3977,7 +3979,7 @@ static enum gh__error_code do_sub_cmd__server(int argc, const char **argv)
 	};
 
 	enum gh__error_code ec = GH__ERROR_CODE__OK;
-	char *line;
+	char *line, b[LARGE_PACKET_MAX];
 	int len;
 	int k;
 
@@ -4001,7 +4003,7 @@ static enum gh__error_code do_sub_cmd__server(int argc, const char **argv)
 
 top_of_loop:
 	while (1) {
-		len = packet_read_line_gently(0, NULL, &line);
+		len = packet_read_line_gently(0, NULL, &line, b, sizeof(b));
 		if (len < 0 || !line) {
 			/* use extra FLUSH as a QUIT */
 			ec = GH__ERROR_CODE__OK;

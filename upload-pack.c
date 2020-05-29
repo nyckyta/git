@@ -1088,6 +1088,7 @@ void upload_pack(struct upload_pack_options *options)
 	struct string_list symref = STRING_LIST_INIT_DUP;
 	struct object_array want_obj = OBJECT_ARRAY_INIT;
 	struct packet_reader reader;
+	char buf[LARGE_PACKET_MAX];
 
 	stateless_rpc = options->stateless_rpc;
 	timeout = options->timeout;
@@ -1111,7 +1112,7 @@ void upload_pack(struct upload_pack_options *options)
 	if (options->advertise_refs)
 		return;
 
-	packet_reader_init(&reader, 0, NULL, 0,
+	packet_reader_init(&reader, 0, NULL, 0, buf, sizeof(buf),
 			   PACKET_READ_CHOMP_NEWLINE |
 			   PACKET_READ_DIE_ON_ERR_PACKET);
 

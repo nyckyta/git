@@ -35,7 +35,8 @@ int cmd_upload_archive_writer(int argc, const char **argv, const char *prefix)
 	/* put received options in sent_argv[] */
 	argv_array_push(&sent_argv, "git-upload-archive");
 	for (;;) {
-		char *buf = packet_read_line(0, NULL);
+		char b[LARGE_PACKET_MAX];
+		char *buf = packet_read_line(0, NULL, b, sizeof(b));
 		if (!buf)
 			break;	/* got a flush */
 		if (sent_argv.argc > MAX_ARGS)

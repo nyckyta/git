@@ -162,10 +162,11 @@ static int process_request(void)
 {
 	enum request_state state = PROCESS_REQUEST_KEYS;
 	struct packet_reader reader;
+	char buf[LARGE_PACKET_MAX];
 	struct argv_array keys = ARGV_ARRAY_INIT;
 	struct protocol_capability *command = NULL;
 
-	packet_reader_init(&reader, 0, NULL, 0,
+	packet_reader_init(&reader, 0, NULL, 0, buf, sizeof(buf),
 			   PACKET_READ_CHOMP_NEWLINE |
 			   PACKET_READ_GENTLE_ON_EOF |
 			   PACKET_READ_DIE_ON_ERR_PACKET);

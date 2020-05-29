@@ -403,6 +403,7 @@ int send_pack(struct send_pack_args *args,
 	struct async demux;
 	const char *push_cert_nonce = NULL;
 	struct packet_reader reader;
+	char buf[LARGE_PACKET_MAX];
 
 	git_config(send_pack_config, NULL);
 
@@ -574,7 +575,7 @@ int send_pack(struct send_pack_args *args,
 		in = demux.out;
 	}
 
-	packet_reader_init(&reader, in, NULL, 0,
+	packet_reader_init(&reader, in, NULL, 0, buf, sizeof(buf),
 			   PACKET_READ_CHOMP_NEWLINE |
 			   PACKET_READ_DIE_ON_ERR_PACKET);
 

@@ -56,6 +56,7 @@ int cmd_fetch_pack(int argc, const char **argv, const char *prefix)
 	struct oid_array shallow = OID_ARRAY_INIT;
 	struct string_list deepen_not = STRING_LIST_INIT_DUP;
 	struct packet_reader reader;
+	char b[LARGE_PACKET_MAX];
 	enum protocol_version version;
 
 	git_config(git_default_config, NULL);
@@ -189,7 +190,8 @@ int cmd_fetch_pack(int argc, const char **argv, const char *prefix)
 			 * from stdin, until we get a flush packet
 			 */
 			for (;;) {
-				char *line = packet_read_line(0, NULL);
+				char b[LARGE_PACKET_MAX], *line =
+					packet_read_line(0, NULL, b, sizeof(b));
 				if (!line)
 					break;
 				add_sought_entry(&sought, &nr_sought,  &alloc_sought, line);
@@ -218,10 +220,10 @@ int cmd_fetch_pack(int argc, const char **argv, const char *prefix)
 			return args.diag_url ? 0 : 1;
 	}
 
-	packet_reader_init(&reader, fd[0], NULL, 0,
+	packet_reader_init(&reader, fd[0], NULL, 0, b, sizeof(b),
 			   PACKET_READ_CHOMP_NEWLINE |
-			   PACKET_READ_GENTLE_ON_EOF |
-			   PACKET_READ_DIE_ON_ERR_PACKET);
+				   PACKET_READ_GENTLE_ON_EOF |
+				   PACKET_READ_DIE_ON_ERR_PACKET);
 
 	version = discover_version(&reader);
 	switch (version) {

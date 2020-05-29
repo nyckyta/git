@@ -7,7 +7,7 @@
  * source files.  This makes threaded use of packet_ routines unsafe.
  * TODO Eventually, we should phase this out with a proper API.
  */
-char packet_buffer[LARGE_PACKET_MAX];
+//char packet_buffer[LARGE_PACKET_MAX];
 
 /*
  * Warning: `packet_trace_prefix` and the static variables `in_pack`
@@ -407,10 +407,8 @@ int packet_read(int fd, char **src_buffer, size_t *src_len,
 	return pktlen;
 }
 
-static char *packet_read_line_generic_r(int fd,
-					char **src, size_t *src_len,
-					int *dst_len,
-					char *buffer, size_t buffer_size)
+char *packet_read_line_buf(int fd, char **src, size_t *src_len, int *dst_len,
+			   char *buffer, size_t buffer_size)
 {
 	int len = packet_read(fd, src, src_len,
 			      buffer, buffer_size,
@@ -420,20 +418,13 @@ static char *packet_read_line_generic_r(int fd,
 	return (len > 0) ? buffer : NULL;
 }
 
-char *packet_read_line_r(int fd, int *len_p, char *buffer, size_t buffer_size)
+char *packet_read_line(int fd, int *len_p, char *buffer, size_t buffer_size)
 {
-	return packet_read_line_generic_r(fd, NULL, NULL, len_p,
-					  buffer, buffer_size);
+	return packet_read_line_buf(fd, NULL, NULL, len_p, buffer, buffer_size);
 }
 
-char *packet_read_line(int fd, int *len_p)
-{
-	return packet_read_line_r(fd, len_p,
-				  packet_buffer, sizeof(packet_buffer));
-}
-
-int packet_read_line_gently_r(int fd, int *dst_len, char **dst_line,
-			      char *buffer, size_t buffer_size)
+int packet_read_line_gently(int fd, int *dst_len, char **dst_line,
+			    char *buffer, size_t buffer_size)
 {
 	int len = packet_read(fd, NULL, NULL,
 			      buffer, buffer_size,
@@ -443,18 +434,6 @@ int packet_read_line_gently_r(int fd, int *dst_len, char **dst_line,
 	if (dst_line)
 		*dst_line = (len > 0) ? buffer : NULL;
 	return len;
-}
-
-int packet_read_line_gently(int fd, int *dst_len, char **dst_line)
-{
-	return packet_read_line_gently_r(fd, dst_len, dst_line,
-					 packet_buffer, sizeof(packet_buffer));
-}
-
-char *packet_read_line_buf(char **src, size_t *src_len, int *dst_len)
-{
-	return packet_read_line_generic_r(-1, src, src_len, dst_len,
-					  packet_buffer, sizeof(packet_buffer));
 }
 
 ssize_t read_packetized_to_strbuf(int fd_in, struct strbuf *sb_out, int options)
@@ -515,6 +494,7 @@ int recv_sideband(const char *me, int in_stream, int out)
 /* Packet Reader Functions */
 void packet_reader_init(struct packet_reader *reader, int fd,
 			char *src_buffer, size_t src_len,
+			char *dst_buffer, size_t dst_len,
 			int options)
 {
 	memset(reader, 0, sizeof(*reader));
@@ -522,8 +502,8 @@ void packet_reader_init(struct packet_reader *reader, int fd,
 	reader->fd = fd;
 	reader->src_buffer = src_buffer;
 	reader->src_len = src_len;
-	reader->buffer = packet_buffer;
-	reader->buffer_size = sizeof(packet_buffer);
+	reader->buffer = dst_buffer;
+	reader->buffer_size = dst_len;
 	reader->options = options;
 	reader->me = "git";
 }

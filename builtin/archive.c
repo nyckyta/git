@@ -32,6 +32,7 @@ static int run_remote_archiver(int argc, const char **argv,
 	struct transport *transport;
 	struct remote *_remote;
 	struct packet_reader reader;
+	char b[LARGE_PACKET_MAX];
 
 	_remote = remote_get(remote);
 	if (!_remote->url[0])
@@ -54,9 +55,9 @@ static int run_remote_archiver(int argc, const char **argv,
 		packet_write_fmt(fd[1], "argument %s\n", argv[i]);
 	packet_flush(fd[1]);
 
-	packet_reader_init(&reader, fd[0], NULL, 0,
+	packet_reader_init(&reader, fd[0], NULL, 0, b, sizeof(b),
 			   PACKET_READ_CHOMP_NEWLINE |
-			   PACKET_READ_DIE_ON_ERR_PACKET);
+				   PACKET_READ_DIE_ON_ERR_PACKET);
 
 	if (packet_reader_read(&reader) != PACKET_READ_NORMAL)
 		die(_("git archive: expected ACK/NAK, got a flush packet"));

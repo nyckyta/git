@@ -35,7 +35,8 @@ int subprocess_read_status(int fd, struct strbuf *status)
 	int len;
 
 	for (;;) {
-		len = packet_read_line_gently(fd, NULL, &line);
+		char b[LARGE_PACKET_MAX];
+		len = packet_read_line_gently(fd, NULL, &line, b, sizeof(b));
 		if ((len < 0) || !line)
 			break;
 		pair = strbuf_split_str(line, '=', 2);
@@ -171,7 +172,7 @@ static int handshake_version(struct child_process *process,
 {
 	int version_scratch;
 	int i;
-	char *line;
+	char *line, buf[LARGE_PACKET_MAX];
 	const char *p;
 
 	if (!chosen_version)
@@ -188,17 +189,17 @@ static int handshake_version(struct child_process *process,
 	if (packet_flush_gently(process->in))
 		return error("Could not write flush packet");
 
-	if (!(line = packet_read_line(process->out, NULL)) ||
+	if (!(line = packet_read_line(process->out, NULL, buf, sizeof(buf))) ||
 	    !skip_prefix(line, welcome_prefix, &p) ||
 	    strcmp(p, "-server"))
 		return error("Unexpected line '%s', expected %s-server",
 			     line ? line : "<flush packet>", welcome_prefix);
-	if (!(line = packet_read_line(process->out, NULL)) ||
+	if (!(line = packet_read_line(process->out, NULL, buf, sizeof(buf))) ||
 	    !skip_prefix(line, "version=", &p) ||
 	    strtol_i(p, 10, chosen_version))
 		return error("Unexpected line '%s', expected version",
 			     line ? line : "<flush packet>");
-	if ((line = packet_read_line(process->out, NULL)))
+	if ((line = packet_read_line(process->out, NULL, buf, sizeof(buf))))
 		return error("Unexpected line '%s', expected flush", line);
 
 	/* Check to make sure that the version received is supported */
@@ -217,7 +218,7 @@ static int handshake_capabilities(struct child_process *process,
 				  unsigned int *supported_capabilities)
 {
 	int i;
-	char *line;
+	char *line, b[LARGE_PACKET_MAX];
 
 	for (i = 0; capabilities[i].name; i++) {
 		if (packet_write_fmt_gently(process->in, "capability=%s\n",
@@ -227,7 +228,7 @@ static int handshake_capabilities(struct child_process *process,
 	if (packet_flush_gently(process->in))
 		return error("Could not write flush packet");
 
-	while ((line = packet_read_line(process->out, NULL))) {
+	while ((line = packet_read_line(process->out, NULL, b, sizeof(b)))) {
 		const char *p;
 		if (!skip_prefix(line, "capability=", &p))
 			continue;

@@ -757,7 +757,7 @@ static void set_keep_alive(int sockfd)
 
 static int execute(void)
 {
-	char *line = packet_buffer;
+	char line[LARGE_PACKET_MAX];
 	int pktlen, len, i;
 	char *addr = getenv("REMOTE_ADDR"), *port = getenv("REMOTE_PORT");
 	struct hostinfo hi;
@@ -770,7 +770,7 @@ static int execute(void)
 
 	set_keep_alive(0);
 	alarm(init_timeout ? init_timeout : timeout);
-	pktlen = packet_read(0, NULL, NULL, packet_buffer, sizeof(packet_buffer), 0);
+	pktlen = packet_read(0, NULL, NULL, line, sizeof(line), 0);
 	alarm(0);
 
 	len = strlen(line);

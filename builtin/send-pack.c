@@ -155,6 +155,7 @@ int cmd_send_pack(int argc, const char **argv, const char *prefix)
 	int from_stdin = 0;
 	struct push_cas_option cas = {0};
 	struct packet_reader reader;
+	char b[LARGE_PACKET_MAX];
 
 	struct option options[] = {
 		OPT__VERBOSITY(&verbose),
@@ -209,7 +210,8 @@ int cmd_send_pack(int argc, const char **argv, const char *prefix)
 	if (from_stdin) {
 		if (args.stateless_rpc) {
 			const char *buf;
-			while ((buf = packet_read_line(0, NULL)))
+			char b[LARGE_PACKET_MAX];
+			while ((buf = packet_read_line(0, NULL, b, sizeof(b))))
 				refspec_append(&rs, buf);
 		} else {
 			struct strbuf line = STRBUF_INIT;
@@ -248,10 +250,10 @@ int cmd_send_pack(int argc, const char **argv, const char *prefix)
 			args.verbose ? CONNECT_VERBOSE : 0);
 	}
 
-	packet_reader_init(&reader, fd[0], NULL, 0,
+	packet_reader_init(&reader, fd[0], NULL, 0, b, sizeof(b),
 			   PACKET_READ_CHOMP_NEWLINE |
-			   PACKET_READ_GENTLE_ON_EOF |
-			   PACKET_READ_DIE_ON_ERR_PACKET);
+				   PACKET_READ_GENTLE_ON_EOF |
+				   PACKET_READ_DIE_ON_ERR_PACKET);
 
 	switch (discover_version(&reader)) {
 	case protocol_v2:
