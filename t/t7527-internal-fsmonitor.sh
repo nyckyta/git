@@ -24,6 +24,7 @@ test_expect_success 'can start and stop the daemon' '
 		cd test &&
 		: start the daemon implicitly by querying it &&
 		GIT_TRACE2_EVENT="$PWD/../.git/trace" \
+		GIT_TRACE2_PERF="$PWD/../.git/trace-perf" \
 		git fsmonitor--daemon --query 1 0 >actual &&
 		grep "fsmonitor.*serve" ../.git/trace &&
 		git config dummy.value 1 &&
@@ -129,7 +130,7 @@ directory_to_file() {
 }
 
 verify_status() {
-	GIT_TRACE2_EVENT="$PWD/.git/trace" git status >actual &&
+	GIT_TRACE2_EVENT="$PWD/.git/trace" GIT_TRACE2_PERF="$PWD/.git/trace-perf" git status >actual &&
 	GIT_INDEX=.git/fresh-index git read-tree master &&
 	GIT_INDEX=.git/fresh-index git -c core.fsmonitor= status >expect &&
 	test_cmp expect actual
@@ -137,6 +138,7 @@ verify_status() {
 
 test_expect_success 'internal fsmonitor works' '
 	verify_status &&
+cat .git/trace-perf &&
 	git fsmonitor--daemon --is-running
 '
 
