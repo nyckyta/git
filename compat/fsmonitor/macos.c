@@ -112,16 +112,25 @@ static void fsevent_callback(ConstFSEventStreamRef streamRef,
 
 		if ((event_flags[i] & kFSEventStreamEventFlagKernelDropped) ||
 		    (event_flags[i] & kFSEventStreamEventFlagUserDropped)) {
-			trace2_printf("Dropped event %llu flags %u\n", event_ids[i], event_flags[i]);
+			trace2_data_string("fsmonitor", the_repository, "message", "Dropped event");
 			fsmonitor_queue_path(state, &queue, "/", 1, time);
 		}
 
-		if (strcmp(work_str.buf, ".git") && !starts_with(work_str.buf, ".git/")) {
-			trace2_printf("Change %llu in '%s' flags %u\n", event_ids[i], work_str.buf, event_flags[i]);
-			fsmonitor_queue_path(state, &queue,
-					     work_str.buf, work_str.len, time);
-		} else {
-			trace2_printf("Skipping %llu in '%s' flags %u\n", event_ids[i], work_str.buf, event_flags[i]);
+		if (!special && fsmonitor_queue_path(state, &queue,
+						     work_str.buf, work_str.len,
+						     time) < 0) {
+			state->error_code = -1;
+			error("could not queue '%s'; exiting",
+			      work_str.buf);
+			fsmonitor_listen_stop(state);
+			return;
+		} else if (special == FSMONITOR_DAEMON_QUIT) {
+			trace2_data_string("fsmonitor", the_repository, "message", ".git directory being removed so quitting.");
+			exit(0);
+
+		} else if (special < 0) {
+			fsmonitor_listen_stop(state);
+			return;
 		}
 
 		strbuf_reset(&work_str);
