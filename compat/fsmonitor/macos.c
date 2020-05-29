@@ -8,6 +8,7 @@
 typedef unsigned int FSEventStreamCreateFlags;
 #define kFSEventStreamEventFlagItemRemoved 0x200
 #define kFSEventStreamEventFlagKernelDropped 0x004
+#define kFSEventStreamEventFlagRootChanged 0x020
 #define kFSEventStreamEventFlagUserDropped 0x002
 
 typedef struct __FSEventStream *FSEventStreamRef;
