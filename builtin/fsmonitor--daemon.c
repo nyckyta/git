@@ -153,14 +153,6 @@ error:
 	while (isspace(*p))
 		p++;
 	since = strtoumax(p, &p, 10);
-	if (!since || since < state->latest_update || *p) {
-		pthread_mutex_unlock(&state->queue_update_lock);
-		error(_("fsmonitor: %s (%" PRIuMAX", command: %s, rest %s)"),
-		      *p ? "extra stuff" : "incorrect/early timestamp",
-		      since, command, p);
-		goto error;
-	}
-
 
 	/*
 	 * write out cookie file so the queue gets filled with all
@@ -169,6 +161,17 @@ error:
 	fsmonitor_wait_for_cookie(state);
 
 	pthread_mutex_lock(&state->queue_update_lock);
+	if (since < state->latest_update || *p) {
+		pthread_mutex_unlock(&state->queue_update_lock);
+		error(_("fsmonitor: %s (%" PRIuMAX", command: %s, rest %s)"),
+		      *p ? "extra stuff" : "incorrect/early timestamp",
+		      since, command, p);
+		goto error;
+	}
+
+	if (!state->latest_update)
+		BUG("latest_update was not updated");
+
 	queue = state->first;
 	strbuf_addf(&token, "%"PRIu64"", state->latest_update);
 	pthread_mutex_unlock(&state->queue_update_lock);
