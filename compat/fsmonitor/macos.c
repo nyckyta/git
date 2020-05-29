@@ -87,6 +87,7 @@ static void fsevent_callback(ConstFSEventStreamRef streamRef,
 			     const FSEventStreamEventId event_ids[])
 {
 	int i;
+	struct stat st;
 	char **paths = (char **)event_paths;
 	struct fsmonitor_queue_item dummy, *queue = &dummy;
 	uint64_t time = getnanotime();
@@ -98,15 +99,16 @@ static void fsevent_callback(ConstFSEventStreamRef streamRef,
 		time = state->latest_update + 1;
 
 	for (i = 0; i < num_of_events; i++) {
+		int special;
+
 		strbuf_addstr(&work_str, paths[i]);
 		strbuf_remove(&work_str, 0, watch_dir.len);
 		if (strlen(paths[i]) != watch_dir.len)
 			strbuf_remove(&work_str, 0, 1);
 
-		if (!strcmp(work_str.buf, ".git") && (event_flags[i] & kFSEventStreamEventFlagItemRemoved)) {
-			trace2_printf(".git directory being removed so quitting\n");
-			exit(0);
-		}
+		special = fsmonitor_special_path(state, work_str.buf, work_str.len,
+						 (event_flags[i] & (kFSEventStreamEventFlagRootChanged | kFSEventStreamEventFlagItemRemoved)) &&
+						 lstat(paths[i], &st));
 
 		if ((event_flags[i] & kFSEventStreamEventFlagKernelDropped) ||
 		    (event_flags[i] & kFSEventStreamEventFlagUserDropped)) {
