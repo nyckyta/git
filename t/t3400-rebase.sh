@@ -166,52 +166,52 @@ test_expect_success 'rebase works with format.useAutoBase' '
 '
 
 test_expect_success 'default to common base in @{upstream}s reflog if no upstream arg (--merge)' '
-	git checkout -b default-base master &&
-	git checkout -b default topic &&
-	git config branch.default.remote . &&
-	git config branch.default.merge refs/heads/default-base &&
+	git checkout -b def-base master &&
+	git checkout -b def topic &&
+	git config branch.def.remote . &&
+	git config branch.def.merge refs/heads/def-base &&
 	git rebase --merge &&
-	git rev-parse --verify default-base >expect &&
-	git rev-parse default~1 >actual &&
+	git rev-parse --verify def-base >expect &&
+	git rev-parse def~1 >actual &&
 	test_cmp expect actual &&
-	git checkout default-base &&
+	git checkout def-base &&
 	git reset --hard HEAD^ &&
-	git checkout default &&
+	git checkout def &&
 	git rebase --merge &&
-	git rev-parse --verify default-base >expect &&
-	git rev-parse default~1 >actual &&
+	git rev-parse --verify def-base >expect &&
+	git rev-parse def~1 >actual &&
 	test_cmp expect actual
 '
 
 test_expect_success 'default to common base in @{upstream}s reflog if no upstream arg (--apply)' '
-	git checkout -B default-base master &&
-	git checkout -B default topic &&
-	git config branch.default.remote . &&
-	git config branch.default.merge refs/heads/default-base &&
+	git checkout -B def-base master &&
+	git checkout -B def topic &&
+	git config branch.def.remote . &&
+	git config branch.def.merge refs/heads/def-base &&
 	git rebase --apply &&
-	git rev-parse --verify default-base >expect &&
-	git rev-parse default~1 >actual &&
+	git rev-parse --verify def-base >expect &&
+	git rev-parse def~1 >actual &&
 	test_cmp expect actual &&
-	git checkout default-base &&
+	git checkout def-base &&
 	git reset --hard HEAD^ &&
-	git checkout default &&
+	git checkout def &&
 	git rebase --apply &&
-	git rev-parse --verify default-base >expect &&
-	git rev-parse default~1 >actual &&
+	git rev-parse --verify def-base >expect &&
+	git rev-parse def~1 >actual &&
 	test_cmp expect actual
 '
 
 test_expect_success 'cherry-picked commits and fork-point work together' '
-	git checkout default-base &&
+	git checkout def-base &&
 	echo Amended >A &&
 	git commit -a --no-edit --amend &&
 	test_commit B B &&
 	test_commit new_B B "New B" &&
 	test_commit C C &&
-	git checkout default &&
-	git reset --hard default-base@{4} &&
+	git checkout def &&
+	git reset --hard def-base@{4} &&
 	test_commit D D &&
-	git cherry-pick -2 default-base^ &&
+	git cherry-pick -2 def-base^ &&
 	test_commit final_B B "Final B" &&
 	git rebase &&
 	echo Amended >expect &&
