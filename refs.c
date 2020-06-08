@@ -576,7 +576,7 @@ char *git_default_branch_name(int short_name)
 					  &from_config) < 0)
 			die(_("could not retrieve `core.defaultBranchName`"));
 
-		branch_name = from_config ? from_config : "master";
+		branch_name = from_config ? from_config : "main";
 	}
 
 	if (short_name)
