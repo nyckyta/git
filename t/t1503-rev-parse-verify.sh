@@ -51,7 +51,7 @@ test_expect_success 'works with one good rev' '
 	test "$rev_hash3" = "$HASH3" &&
 	rev_hash4=$(git rev-parse --verify $HASH4) &&
 	test "$rev_hash4" = "$HASH4" &&
-	rev_master=$(git rev-parse --verify master) &&
+	rev_master=$(git rev-parse --verify default) &&
 	test "$rev_master" = "$HASH4" &&
 	rev_head=$(git rev-parse --verify HEAD) &&
 	test "$rev_head" = "$HASH4"
@@ -116,27 +116,27 @@ test_expect_success 'no stdout output on error' '
 '
 
 test_expect_success 'use --default' '
-	git rev-parse --verify --default master &&
-	git rev-parse --verify --default master HEAD &&
-	git rev-parse --default master --verify &&
-	git rev-parse --default master --verify HEAD &&
-	git rev-parse --verify HEAD --default master &&
-	test_must_fail git rev-parse --verify foo --default master &&
+	git rev-parse --verify --default default &&
+	git rev-parse --verify --default default HEAD &&
+	git rev-parse --default default --verify &&
+	git rev-parse --default default --verify HEAD &&
+	git rev-parse --verify HEAD --default default &&
+	test_must_fail git rev-parse --verify foo --default default &&
 	test_must_fail git rev-parse --default HEAD --verify bar &&
 	test_must_fail git rev-parse --verify --default HEAD baz &&
 	test_must_fail git rev-parse --default foo --verify &&
 	test_must_fail git rev-parse --verify --default bar
 '
 
-test_expect_success 'master@{n} for various n' '
+test_expect_success 'default@{n} for various n' '
 	N=$(git reflog | wc -l) &&
 	Nm1=$(($N-1)) &&
 	Np1=$(($N+1)) &&
-	git rev-parse --verify master@{0} &&
-	git rev-parse --verify master@{1} &&
-	git rev-parse --verify master@{$Nm1} &&
-	test_must_fail git rev-parse --verify master@{$N} &&
-	test_must_fail git rev-parse --verify master@{$Np1}
+	git rev-parse --verify default@{0} &&
+	git rev-parse --verify default@{1} &&
+	git rev-parse --verify default@{$Nm1} &&
+	test_must_fail git rev-parse --verify default@{$N} &&
+	test_must_fail git rev-parse --verify default@{$Np1}
 '
 
 test_expect_success SYMLINKS 'ref resolution not confused by broken symlinks' '

@@ -26,19 +26,19 @@ check_config() {
 	test_cmp expect.$1 actual.$1
 }
 
-test_expect_success 'push -u master:master' '
-	git push -u upstream master:master &&
-	check_config master upstream refs/heads/master
+test_expect_success 'push -u default:default' '
+	git push -u upstream default:default &&
+	check_config default upstream refs/heads/default
 '
 
-test_expect_success 'push -u master:other' '
-	git push -u upstream master:other &&
-	check_config master upstream refs/heads/other
+test_expect_success 'push -u default:other' '
+	git push -u upstream default:other &&
+	check_config default upstream refs/heads/other
 '
 
-test_expect_success 'push -u --dry-run master:otherX' '
-	git push -u --dry-run upstream master:otherX &&
-	check_config master upstream refs/heads/other
+test_expect_success 'push -u --dry-run default:otherX' '
+	git push -u --dry-run upstream default:otherX &&
+	check_config default upstream refs/heads/other
 '
 
 test_expect_success 'push -u master2:master2' '
@@ -74,7 +74,7 @@ test_expect_success 'push -u HEAD' '
 test_expect_success TTY 'progress messages go to tty' '
 	ensure_fresh_upstream &&
 
-	test_terminal git push -u upstream master >out 2>err &&
+	test_terminal git push -u upstream default >out 2>err &&
 	test_i18ngrep "Writing objects" err
 '
 
@@ -82,7 +82,7 @@ test_expect_success 'progress messages do not go to non-tty' '
 	ensure_fresh_upstream &&
 
 	# skip progress messages, since stderr is non-tty
-	git push -u upstream master >out 2>err &&
+	git push -u upstream default >out 2>err &&
 	test_i18ngrep ! "Writing objects" err
 '
 
@@ -90,21 +90,21 @@ test_expect_success 'progress messages go to non-tty (forced)' '
 	ensure_fresh_upstream &&
 
 	# force progress messages to stderr, even though it is non-tty
-	git push -u --progress upstream master >out 2>err &&
+	git push -u --progress upstream default >out 2>err &&
 	test_i18ngrep "Writing objects" err
 '
 
 test_expect_success TTY 'push -q suppresses progress' '
 	ensure_fresh_upstream &&
 
-	test_terminal git push -u -q upstream master >out 2>err &&
+	test_terminal git push -u -q upstream default >out 2>err &&
 	test_i18ngrep ! "Writing objects" err
 '
 
 test_expect_success TTY 'push --no-progress suppresses progress' '
 	ensure_fresh_upstream &&
 
-	test_terminal git push -u --no-progress upstream master >out 2>err &&
+	test_terminal git push -u --no-progress upstream default >out 2>err &&
 	test_i18ngrep ! "Unpacking objects" err &&
 	test_i18ngrep ! "Writing objects" err
 '
@@ -112,7 +112,7 @@ test_expect_success TTY 'push --no-progress suppresses progress' '
 test_expect_success TTY 'quiet push' '
 	ensure_fresh_upstream &&
 
-	test_terminal git push --quiet --no-progress upstream master 2>&1 | tee output &&
+	test_terminal git push --quiet --no-progress upstream default 2>&1 | tee output &&
 	test_must_be_empty output
 '
 

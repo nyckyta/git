@@ -36,7 +36,7 @@ create_commits_in () {
 		shift ||
 		return 1
 	done &&
-	git -C "$repo" update-ref refs/heads/master $oid
+	git -C "$repo" update-ref refs/heads/default $oid
 }
 
 # Format the output of git-push, git-show-ref and other commands to make a
@@ -57,8 +57,8 @@ make_user_friendly_and_stable_output () {
 }
 
 setup_upstream_and_workbench () {
-	# Upstream  after setup : master(B)  foo(A)  bar(A)  baz(A)
-	# Workbench after setup : master(A)
+	# Upstream  after setup : default(B)  foo(A)  bar(A)  baz(A)
+	# Workbench after setup : default(A)
 	test_expect_success "setup upstream repository and workbench" '
 		rm -rf upstream.git workbench &&
 		git init --bare upstream.git &&
@@ -70,9 +70,9 @@ setup_upstream_and_workbench () {
 			# this fixed-width oid will be replaced with "<OID>".
 			git config core.abbrev 7 &&
 			git remote add origin ../upstream.git &&
-			git update-ref refs/heads/master $A &&
+			git update-ref refs/heads/default $A &&
 			git push origin \
-				$B:refs/heads/master \
+				$B:refs/heads/default \
 				$A:refs/heads/foo \
 				$A:refs/heads/bar \
 				$A:refs/heads/baz
@@ -94,17 +94,17 @@ run_git_push_porcelain_output_test() {
 		;;
 	esac
 
-	# Refs of upstream : master(B)  foo(A)  bar(A)  baz(A)
-	# Refs of workbench: master(A)                  baz(A)  next(A)
-	# git-push         : master(A)  NULL    (B)     baz(A)  next(A)
+	# Refs of upstream : default(B)  foo(A)  bar(A)  baz(A)
+	# Refs of workbench: default(A)                  baz(A)  next(A)
+	# git-push         : default(A)  NULL    (B)     baz(A)  next(A)
 	test_expect_success "porcelain output of successful git-push ($PROTOCOL)" '
 		(
 			cd workbench &&
-			git update-ref refs/heads/master $A &&
+			git update-ref refs/heads/default $A &&
 			git update-ref refs/heads/baz $A &&
 			git update-ref refs/heads/next $A &&
 			git push --porcelain --force origin \
-				master \
+				default \
 				:refs/heads/foo \
 				$B:bar \
 				baz \
@@ -115,8 +115,8 @@ run_git_push_porcelain_output_test() {
 		To <URL/of/upstream.git>
 		=    refs/heads/baz:refs/heads/baz    [up to date]
 		     <COMMIT-B>:refs/heads/bar    <OID-A>..<OID-B>
+		+    refs/heads/default:refs/heads/default    <OID-B>...<OID-A> (forced update)
 		-    :refs/heads/foo    [deleted]
-		+    refs/heads/master:refs/heads/master    <OID-B>...<OID-A> (forced update)
 		*    refs/heads/next:refs/heads/next    [new branch]
 		Done
 		EOF
@@ -127,22 +127,22 @@ run_git_push_porcelain_output_test() {
 		cat >expect <<-EOF &&
 		<COMMIT-B> refs/heads/bar
 		<COMMIT-A> refs/heads/baz
-		<COMMIT-A> refs/heads/master
+		<COMMIT-A> refs/heads/default
 		<COMMIT-A> refs/heads/next
 		EOF
 		test_cmp expect actual
 	'
 
-	# Refs of upstream : master(A)  bar(B)  baz(A)  next(A)
-	# Refs of workbench: master(B)  bar(A)  baz(A)  next(A)
-	# git-push         : master(B)  bar(A)  NULL    next(A)
+	# Refs of upstream : default(A)  bar(B)  baz(A)  next(A)
+	# Refs of workbench: default(B)  bar(A)  baz(A)  next(A)
+	# git-push         : default(B)  bar(A)  NULL    next(A)
 	test_expect_success "atomic push failed ($PROTOCOL)" '
 		(
 			cd workbench &&
-			git update-ref refs/heads/master $B &&
+			git update-ref refs/heads/default $B &&
 			git update-ref refs/heads/bar $A &&
 			test_must_fail git push --atomic --porcelain origin \
-				master \
+				default \
 				bar \
 				:baz \
 				next
@@ -153,7 +153,7 @@ run_git_push_porcelain_output_test() {
 		=    refs/heads/next:refs/heads/next    [up to date]
 		!    refs/heads/bar:refs/heads/bar    [rejected] (non-fast-forward)
 		!    (delete):refs/heads/baz    [rejected] (atomic push failed)
-		!    refs/heads/master:refs/heads/master    [rejected] (atomic push failed)
+		!    refs/heads/default:refs/heads/default    [rejected] (atomic push failed)
 		Done
 		EOF
 		test_cmp expect actual &&
@@ -163,7 +163,7 @@ run_git_push_porcelain_output_test() {
 		cat >expect <<-EOF &&
 		<COMMIT-B> refs/heads/bar
 		<COMMIT-A> refs/heads/baz
-		<COMMIT-A> refs/heads/master
+		<COMMIT-A> refs/heads/default
 		<COMMIT-A> refs/heads/next
 		EOF
 		test_cmp expect actual
@@ -174,16 +174,16 @@ run_git_push_porcelain_output_test() {
 		EOF
 	'
 
-	# Refs of upstream : master(A)  bar(B)  baz(A)  next(A)
-	# Refs of workbench: master(B)  bar(A)  baz(A)  next(A)
-	# git-push         : master(B)  bar(A)  NULL    next(A)
+	# Refs of upstream : default(A)  bar(B)  baz(A)  next(A)
+	# Refs of workbench: default(B)  bar(A)  baz(A)  next(A)
+	# git-push         : default(B)  bar(A)  NULL    next(A)
 	test_expect_success "pre-receive hook declined ($PROTOCOL)" '
 		(
 			cd workbench &&
-			git update-ref refs/heads/master $B &&
+			git update-ref refs/heads/default $B &&
 			git update-ref refs/heads/bar $A &&
 			test_must_fail git push --porcelain --force origin \
-				master \
+				default \
 				bar \
 				:baz \
 				next
@@ -194,7 +194,7 @@ run_git_push_porcelain_output_test() {
 		=    refs/heads/next:refs/heads/next    [up to date]
 		!    refs/heads/bar:refs/heads/bar    [remote rejected] (pre-receive hook declined)
 		!    :refs/heads/baz    [remote rejected] (pre-receive hook declined)
-		!    refs/heads/master:refs/heads/master    [remote rejected] (pre-receive hook declined)
+		!    refs/heads/default:refs/heads/default    [remote rejected] (pre-receive hook declined)
 		Done
 		EOF
 		test_cmp expect actual &&
@@ -204,7 +204,7 @@ run_git_push_porcelain_output_test() {
 		cat >expect <<-EOF &&
 		<COMMIT-B> refs/heads/bar
 		<COMMIT-A> refs/heads/baz
-		<COMMIT-A> refs/heads/master
+		<COMMIT-A> refs/heads/default
 		<COMMIT-A> refs/heads/next
 		EOF
 		test_cmp expect actual
@@ -214,14 +214,14 @@ run_git_push_porcelain_output_test() {
 		rm "$upstream/hooks/pre-receive"
 	'
 
-	# Refs of upstream : master(A)  bar(B)  baz(A)  next(A)
-	# Refs of workbench: master(B)  bar(A)  baz(A)  next(A)
-	# git-push         : master(B)  bar(A)  NULL    next(A)
+	# Refs of upstream : default(A)  bar(B)  baz(A)  next(A)
+	# Refs of workbench: default(B)  bar(A)  baz(A)  next(A)
+	# git-push         : default(B)  bar(A)  NULL    next(A)
 	test_expect_success "non-fastforward push ($PROTOCOL)" '
 		(
 			cd workbench &&
 			test_must_fail git push --porcelain origin \
-				master \
+				default \
 				bar \
 				:baz \
 				next
@@ -231,7 +231,7 @@ run_git_push_porcelain_output_test() {
 		To <URL/of/upstream.git>
 		=    refs/heads/next:refs/heads/next    [up to date]
 		-    :refs/heads/baz    [deleted]
-		     refs/heads/master:refs/heads/master    <OID-A>..<OID-B>
+		     refs/heads/default:refs/heads/default    <OID-A>..<OID-B>
 		!    refs/heads/bar:refs/heads/bar    [rejected] (non-fast-forward)
 		Done
 		EOF
@@ -241,7 +241,7 @@ run_git_push_porcelain_output_test() {
 		make_user_friendly_and_stable_output <out >actual &&
 		cat >expect <<-EOF &&
 		<COMMIT-B> refs/heads/bar
-		<COMMIT-B> refs/heads/master
+		<COMMIT-B> refs/heads/default
 		<COMMIT-A> refs/heads/next
 		EOF
 		test_cmp expect actual

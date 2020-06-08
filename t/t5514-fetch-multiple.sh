@@ -17,7 +17,7 @@ setup_repository () {
 	git add elif &&
 	test_tick &&
 	git commit -m "Second" &&
-	git checkout master
+	git checkout default
 	)
 }
 
@@ -32,16 +32,16 @@ test_expect_success setup '
 '
 
 cat > test/expect << EOF
-  one/master
+  one/default
   one/side
-  origin/HEAD -> origin/master
-  origin/master
+  origin/HEAD -> origin/default
+  origin/default
   origin/side
   three/another
-  three/master
+  three/default
   three/side
   two/another
-  two/master
+  two/default
   two/side
 EOF
 
@@ -70,15 +70,15 @@ test_expect_success 'git fetch --all should continue if a remote has errors' '
 test_expect_success 'git fetch --all does not allow non-option arguments' '
 	(cd test &&
 	 test_must_fail git fetch --all origin &&
-	 test_must_fail git fetch --all origin master)
+	 test_must_fail git fetch --all origin default)
 '
 
 cat > expect << EOF
-  origin/HEAD -> origin/master
-  origin/master
+  origin/HEAD -> origin/default
+  origin/default
   origin/side
   three/another
-  three/master
+  three/default
   three/side
 EOF
 
@@ -92,10 +92,10 @@ test_expect_success 'git fetch --multiple (but only one remote)' '
 '
 
 cat > expect << EOF
-  one/master
+  one/default
   one/side
   two/another
-  two/master
+  two/default
   two/side
 EOF
 
@@ -133,13 +133,13 @@ test_expect_success 'git fetch --all (skipFetchAll)' '
 '
 
 cat > expect << EOF
-  one/master
+  one/default
   one/side
   three/another
-  three/master
+  three/default
   three/side
   two/another
-  two/master
+  two/default
   two/side
 EOF
 

@@ -65,9 +65,9 @@ test_expect_success 'request invalid command' '
 #
 test_expect_success 'setup some refs and tags' '
 	test_commit one &&
-	git branch dev master &&
+	git branch dev default &&
 	test_commit two &&
-	git symbolic-ref refs/heads/release refs/heads/master &&
+	git symbolic-ref refs/heads/release refs/heads/default &&
 	git tag -a -m "annotated tag" annotated-tag
 '
 
@@ -79,8 +79,8 @@ test_expect_success 'basics of ls-refs' '
 
 	cat >expect <<-EOF &&
 	$(git rev-parse HEAD) HEAD
+	$(git rev-parse refs/heads/default) refs/heads/default
 	$(git rev-parse refs/heads/dev) refs/heads/dev
-	$(git rev-parse refs/heads/master) refs/heads/master
 	$(git rev-parse refs/heads/release) refs/heads/release
 	$(git rev-parse refs/tags/annotated-tag) refs/tags/annotated-tag
 	$(git rev-parse refs/tags/one) refs/tags/one
@@ -97,13 +97,13 @@ test_expect_success 'basic ref-prefixes' '
 	test-tool pkt-line pack >in <<-EOF &&
 	command=ls-refs
 	0001
-	ref-prefix refs/heads/master
+	ref-prefix refs/heads/default
 	ref-prefix refs/tags/one
 	0000
 	EOF
 
 	cat >expect <<-EOF &&
-	$(git rev-parse refs/heads/master) refs/heads/master
+	$(git rev-parse refs/heads/default) refs/heads/default
 	$(git rev-parse refs/tags/one) refs/tags/one
 	0000
 	EOF
@@ -122,8 +122,8 @@ test_expect_success 'refs/heads prefix' '
 	EOF
 
 	cat >expect <<-EOF &&
+	$(git rev-parse refs/heads/default) refs/heads/default
 	$(git rev-parse refs/heads/dev) refs/heads/dev
-	$(git rev-parse refs/heads/master) refs/heads/master
 	$(git rev-parse refs/heads/release) refs/heads/release
 	0000
 	EOF
@@ -164,9 +164,9 @@ test_expect_success 'symrefs parameter' '
 	EOF
 
 	cat >expect <<-EOF &&
+	$(git rev-parse refs/heads/default) refs/heads/default
 	$(git rev-parse refs/heads/dev) refs/heads/dev
-	$(git rev-parse refs/heads/master) refs/heads/master
-	$(git rev-parse refs/heads/release) refs/heads/release symref-target:refs/heads/master
+	$(git rev-parse refs/heads/release) refs/heads/release symref-target:refs/heads/default
 	0000
 	EOF
 

@@ -54,7 +54,7 @@ test_expect_success 'setup' '
 test_format () {
 	cat >expect.$1
 	test_expect_${3:-success} "format $1" "
-		git rev-list --pretty=format:'$2' master >output.$1 &&
+		git rev-list --pretty=format:'$2' default >output.$1 &&
 		test_cmp expect.$1 output.$1
 	"
 }
@@ -185,13 +185,13 @@ test_expect_success 'basic colors' '
 	<RED>foo<GREEN>bar<BLUE>baz<RESET>xyzzy
 	EOF
 	format="%Credfoo%Cgreenbar%Cbluebaz%Cresetxyzzy" &&
-	git rev-list --color --format="$format" -1 master >actual.raw &&
+	git rev-list --color --format="$format" -1 default >actual.raw &&
 	test_decode_color <actual.raw >actual &&
 	test_cmp expect actual
 '
 
 test_expect_success '%S is not a placeholder for rev-list yet' '
-	git rev-list --format="%S" -1 master | grep "%S"
+	git rev-list --format="%S" -1 default | grep "%S"
 '
 
 test_expect_success 'advanced colors' '
@@ -200,7 +200,7 @@ test_expect_success 'advanced colors' '
 	<BOLD;RED;BYELLOW>foo<RESET>
 	EOF
 	format="%C(red yellow bold)foo%C(reset)" &&
-	git rev-list --color --format="$format" -1 master >actual.raw &&
+	git rev-list --color --format="$format" -1 default >actual.raw &&
 	test_decode_color <actual.raw >actual &&
 	test_cmp expect actual
 '
@@ -407,7 +407,7 @@ test_expect_success '%x00 shows NUL' '
 
 test_expect_success '%ad respects --date=' '
 	echo 2005-04-07 >expect.ad-short &&
-	git log -1 --date=short --pretty=tformat:%ad >output.ad-short master &&
+	git log -1 --date=short --pretty=tformat:%ad >output.ad-short default &&
 	test_cmp expect.ad-short output.ad-short
 '
 
@@ -495,8 +495,8 @@ test_expect_success '"%h %gD: %gs" is same as git-reflog (with --abbrev)' '
 '
 
 test_expect_success '%gd shortens ref name' '
-	echo "master@{0}" >expect.gd-short &&
-	git log -g -1 --format=%gd refs/heads/master >actual.gd-short &&
+	echo "default@{0}" >expect.gd-short &&
+	git log -g -1 --format=%gd refs/heads/default >actual.gd-short &&
 	test_cmp expect.gd-short actual.gd-short
 '
 

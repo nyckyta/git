@@ -20,16 +20,16 @@ test_expect_failure PERL 'import with criss cross times on revisions' '
 
     git cvsimport -p"-x" -C module-git module &&
     (cd module-git &&
-        git log --pretty=format:%s > ../actual-master &&
+        git log --pretty=format:%s > ../actual-default &&
         git log A~2..A --pretty="format:%s %ad" -- > ../actual-A &&
-        echo "" >> ../actual-master &&
+        echo "" >> ../actual-default &&
 	echo "" >> ../actual-A
     ) &&
     echo "Rev 4
 Rev 3
 Rev 2
-Rev 1" > expect-master &&
-    test_cmp expect-master actual-master &&
+Rev 1" > expect-default &&
+    test_cmp expect-default actual-default &&
 
     echo "Rev 5 Branch A Wed Mar 11 19:09:10 2009 +0000
 Rev 4 Branch A Wed Mar 11 19:03:52 2009 +0000" > expect-A &&

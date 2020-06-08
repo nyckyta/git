@@ -79,10 +79,10 @@ test_expect_success 'snapshot: HEAD' '
 '
 test_debug 'cat gitweb.headers && cat file_list'
 
-test_expect_success 'snapshot: short branch name (master)' '
-	gitweb_run "p=.git;a=snapshot;h=master;sf=tar" &&
-	ID=$(git rev-parse --verify --short=7 master) &&
-	check_snapshot ".git-master-$ID"
+test_expect_success 'snapshot: short branch name (default)' '
+	gitweb_run "p=.git;a=snapshot;h=default;sf=tar" &&
+	ID=$(git rev-parse --verify --short=7 default) &&
+	check_snapshot ".git-default-$ID"
 '
 test_debug 'cat gitweb.headers && cat file_list'
 
@@ -93,10 +93,10 @@ test_expect_success 'snapshot: short tag name (first)' '
 '
 test_debug 'cat gitweb.headers && cat file_list'
 
-test_expect_success 'snapshot: full branch name (refs/heads/master)' '
-	gitweb_run "p=.git;a=snapshot;h=refs/heads/master;sf=tar" &&
-	ID=$(git rev-parse --verify --short=7 master) &&
-	check_snapshot ".git-master-$ID"
+test_expect_success 'snapshot: full branch name (refs/heads/default)' '
+	gitweb_run "p=.git;a=snapshot;h=refs/heads/default;sf=tar" &&
+	ID=$(git rev-parse --verify --short=7 default) &&
+	check_snapshot ".git-default-$ID"
 '
 test_debug 'cat gitweb.headers && cat file_list'
 

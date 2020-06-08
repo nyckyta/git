@@ -20,22 +20,22 @@ compare () {
 
 test_expect_success 'setup' '
 
-	commit master &&
-	git checkout -b subspace/one master &&
+	commit default &&
+	git checkout -b subspace/one default &&
 	commit one &&
-	git checkout -b subspace/two master &&
+	git checkout -b subspace/two default &&
 	commit two &&
-	git checkout -b subspace-x master &&
+	git checkout -b subspace-x default &&
 	commit subspace-x &&
-	git checkout -b other/three master &&
+	git checkout -b other/three default &&
 	commit three &&
-	git checkout -b someref master &&
+	git checkout -b someref default &&
 	commit some &&
-	git checkout master &&
+	git checkout default &&
 	commit master2 &&
-	git tag foo/bar master &&
+	git tag foo/bar default &&
 	commit master3 &&
-	git update-ref refs/remotes/foo/baz master &&
+	git update-ref refs/remotes/foo/baz default &&
 	commit master4 &&
 	git update-ref refs/remotes/upstream/one subspace/one &&
 	git update-ref refs/remotes/upstream/two subspace/two &&
@@ -83,7 +83,7 @@ test_expect_failure 'rev-parse accepts --glob as detached option' '
 
 test_expect_failure 'rev-parse is not confused by option-like glob' '
 
-	compare rev-parse "master" "--glob --symbolic master"
+	compare rev-parse "default" "--glob --symbolic default"
 
 '
 
@@ -111,15 +111,15 @@ test_expect_success 'rev-parse --glob=heads/subspace/* --glob=heads/other/*' '
 
 '
 
-test_expect_success 'rev-parse --glob=heads/someref/* master' '
+test_expect_success 'rev-parse --glob=heads/someref/* default' '
 
-	compare rev-parse "master" "--glob=heads/someref/* master"
+	compare rev-parse "default" "--glob=heads/someref/* default"
 
 '
 
 test_expect_success 'rev-parse --glob=heads/*' '
 
-	compare rev-parse "master other/three someref subspace-x subspace/one subspace/two" "--glob=heads/*"
+	compare rev-parse "default other/three someref subspace-x subspace/one subspace/two" "--glob=heads/*"
 
 '
 
@@ -136,7 +136,7 @@ test_expect_success 'rev-parse --remotes=foo' '
 '
 
 test_expect_success 'rev-parse --exclude with --branches' '
-	compare rev-parse "--exclude=*/* --branches" "master someref subspace-x"
+	compare rev-parse "--exclude=*/* --branches" "default someref subspace-x"
 '
 
 test_expect_success 'rev-parse --exclude with --all' '
@@ -221,7 +221,7 @@ test_expect_success 'rev-list --glob refs/heads/subspace/*' '
 
 test_expect_success 'rev-list not confused by option-like --glob arg' '
 
-	compare rev-list "master" "--glob -0 master"
+	compare rev-list "default" "--glob -0 default"
 
 '
 
@@ -269,13 +269,13 @@ test_expect_success 'rev-list --branches=subspace' '
 
 test_expect_success 'rev-list --branches' '
 
-	compare rev-list "master subspace-x someref other/three subspace/one subspace/two" "--branches"
+	compare rev-list "default subspace-x someref other/three subspace/one subspace/two" "--branches"
 
 '
 
-test_expect_success 'rev-list --glob=heads/someref/* master' '
+test_expect_success 'rev-list --glob=heads/someref/* default' '
 
-	compare rev-list "master" "--glob=heads/someref/* master"
+	compare rev-list "default" "--glob=heads/someref/* default"
 
 '
 
@@ -287,7 +287,7 @@ test_expect_success 'rev-list --glob=heads/subspace/* --glob=heads/other/*' '
 
 test_expect_success 'rev-list --glob=heads/*' '
 
-	compare rev-list "master other/three someref subspace-x subspace/one subspace/two" "--glob=heads/*"
+	compare rev-list "default other/three someref subspace-x subspace/one subspace/two" "--glob=heads/*"
 
 '
 
@@ -310,7 +310,7 @@ test_expect_success 'rev-list --remotes=foo' '
 '
 
 test_expect_success 'rev-list --exclude with --branches' '
-	compare rev-list "--exclude=*/* --branches" "master someref subspace-x"
+	compare rev-list "--exclude=*/* --branches" "default someref subspace-x"
 '
 
 test_expect_success 'rev-list --exclude with --all' '
@@ -349,13 +349,13 @@ test_expect_success 'shortlog accepts --glob/--tags/--remotes' '
 
 	compare shortlog "subspace/one subspace/two" --branches=subspace &&
 	compare shortlog \
-	  "master subspace-x someref other/three subspace/one subspace/two" \
+	  "default subspace-x someref other/three subspace/one subspace/two" \
 	  --branches &&
-	compare shortlog master "--glob=heads/someref/* master" &&
+	compare shortlog default "--glob=heads/someref/* default" &&
 	compare shortlog "subspace/one subspace/two other/three" \
 	  "--glob=heads/subspace/* --glob=heads/other/*" &&
 	compare shortlog \
-	  "master other/three someref subspace-x subspace/one subspace/two" \
+	  "default other/three someref subspace-x subspace/one subspace/two" \
 	  "--glob=heads/*" &&
 	compare shortlog foo/bar --tags=foo &&
 	compare shortlog "foo/bar qux/one qux/two qux/x" --tags &&
@@ -366,14 +366,14 @@ test_expect_success 'shortlog accepts --glob/--tags/--remotes' '
 test_expect_failure 'shortlog accepts --glob as detached option' '
 
 	compare shortlog \
-	  "master other/three someref subspace-x subspace/one subspace/two" \
+	  "default other/three someref subspace-x subspace/one subspace/two" \
 	  "--glob heads/*"
 
 '
 
 test_expect_failure 'shortlog --glob is not confused by option-like argument' '
 
-	compare shortlog master "--glob -e master"
+	compare shortlog default "--glob -e default"
 
 '
 

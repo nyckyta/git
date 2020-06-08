@@ -158,7 +158,7 @@ test_pause () {
 # to understand what is going on in a failing test.
 #
 # Examples:
-#     debug git checkout master
+#     debug git checkout default
 #     debug --debugger=nemiver git $ARGS
 #     debug -d "valgrind --tool=memcheck --track-origins=yes" git $ARGS
 debug () {
@@ -874,7 +874,7 @@ test_might_fail () {
 # given command exited with a given exit code. Meant to be used as:
 #
 #	test_expect_success 'Merge with d/f conflicts' '
-#		test_expect_code 1 git merge "merge msg" B master
+#		test_expect_code 1 git merge "merge msg" B default
 #	'
 
 test_expect_code () {

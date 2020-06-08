@@ -26,7 +26,7 @@ test_expect_success 'create http-accessible bare repository with loose objects' 
 	 hooks/post-update
 	) &&
 	git remote add public "$HTTPD_DOCUMENT_ROOT_PATH/repo.git" &&
-	git push public master:master
+	git push public default:default
 '
 
 test_expect_success 'clone http repository' '
@@ -37,8 +37,8 @@ test_expect_success 'clone http repository' '
 
 test_expect_success 'list refs from outside any repository' '
 	cat >expect <<-EOF &&
-	$(git rev-parse master)	HEAD
-	$(git rev-parse master)	refs/heads/master
+	$(git rev-parse default)	HEAD
+	$(git rev-parse default)	refs/heads/default
 	EOF
 	nongit git ls-remote "$HTTPD_URL/dumb/repo.git" >actual &&
 	test_cmp expect actual
@@ -163,8 +163,8 @@ test_expect_success 'fetch changes via manual http-fetch' '
 
 	HEAD=$(git rev-parse --verify HEAD) &&
 	(cd clone2 &&
-	 git http-fetch -a -w heads/master-new $HEAD $(git config remote.origin.url) &&
-	 git checkout master-new &&
+	 git http-fetch -a -w heads/default-new $HEAD $(git config remote.origin.url) &&
+	 git checkout default-new &&
 	 test $HEAD = $(git rev-parse --verify HEAD)) &&
 	test_cmp file clone2/file
 '
@@ -174,19 +174,19 @@ test_expect_success 'manual http-fetch without -a works just as well' '
 
 	HEAD=$(git rev-parse --verify HEAD) &&
 	(cd clone3 &&
-	 git http-fetch -w heads/master-new $HEAD $(git config remote.origin.url) &&
-	 git checkout master-new &&
+	 git http-fetch -w heads/default-new $HEAD $(git config remote.origin.url) &&
+	 git checkout default-new &&
 	 test $HEAD = $(git rev-parse --verify HEAD)) &&
 	test_cmp file clone3/file
 '
 
 test_expect_success 'http remote detects correct HEAD' '
-	git push public master:other &&
+	git push public default:other &&
 	(cd clone &&
 	 git remote set-head origin -d &&
 	 git remote set-head origin -a &&
 	 git symbolic-ref refs/remotes/origin/HEAD > output &&
-	 echo refs/remotes/origin/master > expect &&
+	 echo refs/remotes/origin/default > expect &&
 	 test_cmp expect output
 	)
 '
@@ -368,7 +368,7 @@ test_expect_success 'set up evil alternates scheme' '
 	evil=$HTTPD_DOCUMENT_ROOT_PATH/evil.git &&
 	git init --bare "$evil" &&
 	# do this by hand to avoid object existence check
-	printf "%s\\t%s\\n" $sha1 refs/heads/master >"$evil/info/refs"
+	printf "%s\\t%s\\n" $sha1 refs/heads/default >"$evil/info/refs"
 '
 
 # Here we'll just redirect via HTTP. In a real-world attack these would be on

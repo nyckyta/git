@@ -7,11 +7,11 @@ test_description='git rebase --fork-point test'
 
 . ./test-lib.sh
 
-# A---B---D---E    (master)
+# A---B---D---E    (default)
 #      \
 #       C*---F---G (side)
 #
-# C was formerly part of master but master was rewound to remove C
+# C was formerly part of default but default was rewound to remove C
 #
 test_expect_success setup '
 	test_commit A &&
@@ -30,7 +30,7 @@ test_rebase () {
 	expected="$1" &&
 	shift &&
 	test_expect_success "git rebase $*" "
-		git checkout master &&
+		git checkout default &&
 		git reset --hard E &&
 		git checkout side &&
 		git reset --hard G &&
@@ -48,26 +48,26 @@ test_rebase 'G F C E D B A' --no-fork-point
 test_rebase 'G F C D B A' --no-fork-point --onto D
 test_rebase 'G F C B A' --no-fork-point --keep-base
 
-test_rebase 'G F E D B A' --fork-point refs/heads/master
-test_rebase 'G F E D B A' --fork-point master
+test_rebase 'G F E D B A' --fork-point refs/heads/default
+test_rebase 'G F E D B A' --fork-point default
 
-test_rebase 'G F D B A' --fork-point --onto D refs/heads/master
-test_rebase 'G F D B A' --fork-point --onto D master
+test_rebase 'G F D B A' --fork-point --onto D refs/heads/default
+test_rebase 'G F D B A' --fork-point --onto D default
 
-test_rebase 'G F B A' --fork-point --keep-base refs/heads/master
-test_rebase 'G F B A' --fork-point --keep-base master
+test_rebase 'G F B A' --fork-point --keep-base refs/heads/default
+test_rebase 'G F B A' --fork-point --keep-base default
 
-test_rebase 'G F C E D B A' refs/heads/master
-test_rebase 'G F C E D B A' master
+test_rebase 'G F C E D B A' refs/heads/default
+test_rebase 'G F C E D B A' default
 
-test_rebase 'G F C D B A' --onto D refs/heads/master
-test_rebase 'G F C D B A' --onto D master
+test_rebase 'G F C D B A' --onto D refs/heads/default
+test_rebase 'G F C D B A' --onto D default
 
-test_rebase 'G F C B A' --keep-base refs/heads/master
-test_rebase 'G F C B A' --keep-base master
+test_rebase 'G F C B A' --keep-base refs/heads/default
+test_rebase 'G F C B A' --keep-base default
 
 test_expect_success 'git rebase --fork-point with ambigous refname' '
-	git checkout master &&
+	git checkout default &&
 	git checkout -b one &&
 	git checkout side &&
 	git tag one &&

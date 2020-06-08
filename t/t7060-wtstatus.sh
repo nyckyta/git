@@ -51,7 +51,7 @@ EOF
 		git checkout -b side HEAD^ &&
 		git rm foo &&
 		git commit -m delete &&
-		test_must_fail git merge master &&
+		test_must_fail git merge default &&
 		test_must_fail git commit --dry-run >../actual &&
 		test_i18ncmp ../expect ../actual &&
 		git status >../actual &&
@@ -124,18 +124,18 @@ test_expect_success 'git diff-index --cached -C shows 2 copies + 1 unmerged' '
 
 test_expect_success 'status when conflicts with add and rm advice (deleted by them)' '
 	git reset --hard &&
-	git checkout master &&
+	git checkout default &&
 	test_commit init main.txt init &&
 	git checkout -b second_branch &&
 	git rm main.txt &&
 	git commit -m "main.txt deleted on second_branch" &&
 	test_commit second conflict.txt second &&
-	git checkout master &&
+	git checkout default &&
 	test_commit on_second main.txt on_second &&
-	test_commit master conflict.txt master &&
+	test_commit default conflict.txt default &&
 	test_must_fail git merge second_branch &&
 	cat >expected <<\EOF &&
-On branch master
+On branch default
 You have unmerged paths.
   (fix conflicts and run "git commit")
   (use "git merge --abort" to abort the merge)
@@ -209,12 +209,12 @@ EOF
 	git status --untracked-files=no >actual &&
 	test_i18ncmp expected actual &&
 	git reset --hard &&
-	git checkout master
+	git checkout default
 '
 
 test_expect_success 'status --branch with detached HEAD' '
 	git reset --hard &&
-	git checkout master^0 &&
+	git checkout default^0 &&
 	git status --branch --porcelain >actual &&
 	cat >expected <<-EOF &&
 	## HEAD (no branch)
@@ -230,7 +230,7 @@ test_expect_success 'status --branch with detached HEAD' '
 ## Duplicate the above test and verify --porcelain=v1 arg parsing.
 test_expect_success 'status --porcelain=v1 --branch with detached HEAD' '
 	git reset --hard &&
-	git checkout master^0 &&
+	git checkout default^0 &&
 	git status --branch --porcelain=v1 >actual &&
 	cat >expected <<-EOF &&
 	## HEAD (no branch)

@@ -92,13 +92,13 @@ test_expect_success 'git pull --force' '
 	cat >>.git/config <<-\EOF &&
 	[remote "one"]
 		url = ../parent
-		fetch = refs/heads/master:refs/heads/mirror
+		fetch = refs/heads/default:refs/heads/mirror
 	[remote "two"]
 		url = ../parent
-		fetch = refs/heads/master:refs/heads/origin
-	[branch "master"]
+		fetch = refs/heads/default:refs/heads/origin
+	[branch "default"]
 		remote = two
-		merge = refs/heads/master
+		merge = refs/heads/default
 	EOF
 	git pull two &&
 	test_commit A &&
@@ -117,9 +117,9 @@ test_expect_success 'git pull --all' '
 	[remote "two"]
 		url = ../parent
 		fetch = refs/heads/*:refs/remotes/two/*
-	[branch "master"]
+	[branch "default"]
 		remote = one
-		merge = refs/heads/master
+		merge = refs/heads/default
 	EOF
 	git pull --all
 	)
@@ -132,7 +132,7 @@ test_expect_success 'git pull --dry-run' '
 		cd clonedry &&
 		git pull --dry-run ../parent &&
 		test_path_is_missing .git/FETCH_HEAD &&
-		test_path_is_missing .git/refs/heads/master &&
+		test_path_is_missing .git/refs/heads/default &&
 		test_path_is_missing .git/index &&
 		test_path_is_missing file
 	)
@@ -146,7 +146,7 @@ test_expect_success 'git pull --all --dry-run' '
 		git remote add origin ../parent &&
 		git pull --all --dry-run &&
 		test_path_is_missing .git/FETCH_HEAD &&
-		test_path_is_missing .git/refs/remotes/origin/master &&
+		test_path_is_missing .git/refs/remotes/origin/default &&
 		test_path_is_missing .git/index &&
 		test_path_is_missing file
 	)

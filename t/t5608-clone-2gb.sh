@@ -27,7 +27,7 @@ test_expect_success CLONE_2GB 'setup' '
 		i=$(($i+1)) ||
 		echo $? > exit-status
 	 done &&
-	 echo "commit refs/heads/master" &&
+	 echo "commit refs/heads/default" &&
 	 echo "author A U Thor <author@email.com> 123456789 +0000" &&
 	 echo "committer C O Mitter <committer@email.com> 123456789 +0000" &&
 	 echo "data 5" &&

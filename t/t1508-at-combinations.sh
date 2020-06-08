@@ -30,8 +30,8 @@ fail() {
 }
 
 test_expect_success 'setup' '
-	test_commit master-one &&
-	test_commit master-two &&
+	test_commit default-one &&
+	test_commit default-two &&
 	git checkout -b upstream-branch &&
 	test_commit upstream-one &&
 	test_commit upstream-two &&
@@ -47,7 +47,7 @@ test_expect_success 'setup' '
 	git checkout -b new-branch &&
 	test_commit new-one &&
 	test_commit new-two &&
-	git branch -u master old-branch &&
+	git branch -u default old-branch &&
 	git branch -u upstream-branch new-branch
 '
 
@@ -62,8 +62,8 @@ check "@{-1}@{1}" commit old-one
 check "@{u}" ref refs/heads/upstream-branch
 check "HEAD@{u}" ref refs/heads/upstream-branch
 check "@{u}@{1}" commit upstream-one
-check "@{-1}@{u}" ref refs/heads/master
-check "@{-1}@{u}@{1}" commit master-one
+check "@{-1}@{u}" ref refs/heads/default
+check "@{-1}@{u}@{1}" commit default-one
 check "@" commit new-two
 check "@@{u}" ref refs/heads/upstream-branch
 check "@@/at-test" ref refs/heads/@@/at-test

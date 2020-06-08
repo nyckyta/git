@@ -81,7 +81,7 @@ test_expect_success GPG 'set up a signed tag' '
 test_expect_success 'message for merging local branch' '
 	echo "Merge branch ${apos}left${apos}" >expected &&
 
-	git checkout master &&
+	git checkout default &&
 	git fetch . left &&
 
 	git fmt-merge-msg <.git/FETCH_HEAD >actual &&
@@ -89,7 +89,7 @@ test_expect_success 'message for merging local branch' '
 '
 
 test_expect_success GPG 'message for merging local tag signed by good key' '
-	git checkout master &&
+	git checkout default &&
 	git fetch . signed-good-tag &&
 	git fmt-merge-msg <.git/FETCH_HEAD >actual 2>&1 &&
 	grep "^Merge tag ${apos}signed-good-tag${apos}" actual &&
@@ -98,7 +98,7 @@ test_expect_success GPG 'message for merging local tag signed by good key' '
 '
 
 test_expect_success GPG 'message for merging local tag signed by unknown key' '
-	git checkout master &&
+	git checkout default &&
 	git fetch . signed-good-tag &&
 	GNUPGHOME=. git fmt-merge-msg <.git/FETCH_HEAD >actual 2>&1 &&
 	grep "^Merge tag ${apos}signed-good-tag${apos}" actual &&
@@ -109,7 +109,7 @@ test_expect_success GPG 'message for merging local tag signed by unknown key' '
 test_expect_success 'message for merging external branch' '
 	echo "Merge branch ${apos}left${apos} of $(pwd)" >expected &&
 
-	git checkout master &&
+	git checkout default &&
 	git fetch "$(pwd)" left &&
 
 	git fmt-merge-msg <.git/FETCH_HEAD >actual &&
@@ -133,7 +133,7 @@ test_expect_success '[merge] summary/log configuration' '
 	test_config merge.log true &&
 	test_unconfig merge.summary &&
 
-	git checkout master &&
+	git checkout default &&
 	test_tick &&
 	git fetch . left &&
 
@@ -142,7 +142,7 @@ test_expect_success '[merge] summary/log configuration' '
 	test_unconfig merge.log &&
 	test_config merge.summary true &&
 
-	git checkout master &&
+	git checkout default &&
 	test_tick &&
 	git fetch . left &&
 
@@ -153,7 +153,7 @@ test_expect_success '[merge] summary/log configuration' '
 '
 
 test_expect_success 'setup FETCH_HEAD' '
-	git checkout master &&
+	git checkout default &&
 	test_tick &&
 	git fetch . left
 '
@@ -281,7 +281,7 @@ test_expect_success 'fmt-merge-msg -m' '
 
 	test_unconfig merge.log &&
 	test_unconfig merge.summary &&
-	git checkout master &&
+	git checkout default &&
 	git fetch "$(pwd)" left &&
 	git fmt-merge-msg -m "Sync with left" <.git/FETCH_HEAD >actual &&
 	git fmt-merge-msg --log -m "Sync with left" \
@@ -323,28 +323,28 @@ test_expect_success 'setup: expected shortlog for two branches' '
 test_expect_success 'shortlog for two branches' '
 	test_config merge.log true &&
 	test_unconfig merge.summary &&
-	git checkout master &&
+	git checkout default &&
 	test_tick &&
 	git fetch . left right &&
 	git fmt-merge-msg <.git/FETCH_HEAD >actual1 &&
 
 	test_unconfig merge.log &&
 	test_config merge.summary true &&
-	git checkout master &&
+	git checkout default &&
 	test_tick &&
 	git fetch . left right &&
 	git fmt-merge-msg <.git/FETCH_HEAD >actual2 &&
 
 	test_config merge.log yes &&
 	test_unconfig merge.summary &&
-	git checkout master &&
+	git checkout default &&
 	test_tick &&
 	git fetch . left right &&
 	git fmt-merge-msg <.git/FETCH_HEAD >actual3 &&
 
 	test_unconfig merge.log &&
 	test_config merge.summary yes &&
-	git checkout master &&
+	git checkout default &&
 	test_tick &&
 	git fetch . left right &&
 	git fmt-merge-msg <.git/FETCH_HEAD >actual4 &&
@@ -358,7 +358,7 @@ test_expect_success 'shortlog for two branches' '
 test_expect_success 'merge-msg -F' '
 	test_unconfig merge.log &&
 	test_config merge.summary yes &&
-	git checkout master &&
+	git checkout default &&
 	test_tick &&
 	git fetch . left right &&
 	git fmt-merge-msg -F .git/FETCH_HEAD >actual &&
@@ -368,7 +368,7 @@ test_expect_success 'merge-msg -F' '
 test_expect_success 'merge-msg -F in subdirectory' '
 	test_unconfig merge.log &&
 	test_config merge.summary yes &&
-	git checkout master &&
+	git checkout default &&
 	test_tick &&
 	git fetch . left right &&
 	mkdir sub &&
@@ -408,7 +408,7 @@ test_expect_success 'merge-msg tag' '
 	test_unconfig merge.log &&
 	test_config merge.summary yes &&
 
-	git checkout master &&
+	git checkout default &&
 	test_tick &&
 	git fetch . tag tag-r3 &&
 
@@ -438,7 +438,7 @@ test_expect_success 'merge-msg two tags' '
 	test_unconfig merge.log &&
 	test_config merge.summary yes &&
 
-	git checkout master &&
+	git checkout default &&
 	test_tick &&
 	git fetch . tag tag-r3 tag tag-l5 &&
 
@@ -468,7 +468,7 @@ test_expect_success 'merge-msg tag and branch' '
 	test_unconfig merge.log &&
 	test_config merge.summary yes &&
 
-	git checkout master &&
+	git checkout default &&
 	test_tick &&
 	git fetch . tag tag-r3 left &&
 
@@ -495,7 +495,7 @@ test_expect_success 'merge-msg lots of commits' '
 
 	test_config merge.summary yes &&
 
-	git checkout master &&
+	git checkout default &&
 	test_tick &&
 	git fetch . long &&
 
@@ -506,11 +506,11 @@ test_expect_success 'merge-msg lots of commits' '
 test_expect_success 'merge-msg with "merging" an annotated tag' '
 	test_config merge.log true &&
 
-	git checkout master^0 &&
+	git checkout default^0 &&
 	git commit --allow-empty -m "One step ahead" &&
 	git tag -a -m "An annotated one" annote HEAD &&
 
-	git checkout master &&
+	git checkout default &&
 	git fetch . annote &&
 
 	git fmt-merge-msg <.git/FETCH_HEAD >actual &&

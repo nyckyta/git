@@ -121,10 +121,10 @@ by keeping the marks the same across runs.
 
 --reference-excluded-parents::
 	By default, running a command such as `git fast-export
-	master~5..master` will not include the commit master{tilde}5
-	and will make master{tilde}4 no longer have master{tilde}5 as
-	a parent (though both the old master{tilde}4 and new
-	master{tilde}4 will have all the same files).  Use
+	default~5..default` will not include the commit default{tilde}5
+	and will make default{tilde}4 no longer have default{tilde}5 as
+	a parent (though both the old default{tilde}4 and new
+	default{tilde}4 will have all the same files).  Use
 	--reference-excluded-parents to instead have the stream
 	refer to commits in the excluded range of history by their
 	sha1sum.  Note that the resulting stream can only be used by a
@@ -152,11 +152,11 @@ by keeping the marks the same across runs.
 [<git-rev-list-args>...]::
 	A list of arguments, acceptable to 'git rev-parse' and
 	'git rev-list', that specifies the specific objects and references
-	to export.  For example, `master~10..master` causes the
-	current master reference to be exported along with all objects
+	to export.  For example, `default~10..default` causes the
+	current default reference to be exported along with all objects
 	added since its 10th ancestor commit and (unless the
 	--reference-excluded-parents option is specified) all files
-	common to master{tilde}9 and master{tilde}10.
+	common to default{tilde}9 and default{tilde}10.
 
 EXAMPLES
 --------
@@ -170,17 +170,17 @@ empty repository.  Except for reencoding commits that are not in
 UTF-8, it would be a one-to-one mirror.
 
 -----------------------------------------------------
-$ git fast-export master~5..master |
-	sed "s|refs/heads/master|refs/heads/other|" |
+$ git fast-export default~5..default |
+	sed "s|refs/heads/default|refs/heads/other|" |
 	git fast-import
 -----------------------------------------------------
 
-This makes a new branch called 'other' from 'master~5..master'
-(i.e. if 'master' has linear history, it will take the last 5 commits).
+This makes a new branch called 'other' from 'default~5..default'
+(i.e. if 'default' has linear history, it will take the last 5 commits).
 
 Note that this assumes that none of the blobs and commit messages
 referenced by that revision range contains the string
-'refs/heads/master'.
+'refs/heads/default'.
 
 
 ANONYMIZING

@@ -18,24 +18,24 @@ test_expect_success 'set up --reverse example' '
 	commit two &&
 	git checkout -b side HEAD^ &&
 	commit three &&
-	git checkout master &&
+	git checkout default &&
 	git merge -s ours side &&
 	commit five
 	'
 
 test_expect_success '--reverse --parents --full-history combines correctly' '
-	git rev-list --parents --full-history master -- foo |
+	git rev-list --parents --full-history default -- foo |
 		perl -e "print reverse <>" > expected &&
-	git rev-list --reverse --parents --full-history master -- foo \
+	git rev-list --reverse --parents --full-history default -- foo \
 		> actual &&
 	test_cmp expected actual
 	'
 
 test_expect_success '--boundary does too' '
-	git rev-list --boundary --parents --full-history master ^root -- foo |
+	git rev-list --boundary --parents --full-history default ^root -- foo |
 		perl -e "print reverse <>" > expected &&
 	git rev-list --boundary --reverse --parents --full-history \
-		master ^root -- foo > actual &&
+		default ^root -- foo > actual &&
 	test_cmp expected actual
 	'
 

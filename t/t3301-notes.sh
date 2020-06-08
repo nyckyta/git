@@ -1295,11 +1295,11 @@ test_expect_success 'git notes copy diagnoses too many or too few parameters' '
 	test_i18ngrep "too many parameters" error
 '
 
-test_expect_success 'git notes get-ref expands refs/heads/master to refs/notes/refs/heads/master' '
+test_expect_success 'git notes get-ref expands refs/heads/default to refs/notes/refs/heads/default' '
 	test_unconfig core.notesRef &&
 	sane_unset GIT_NOTES_REF &&
-	echo refs/notes/refs/heads/master >expect &&
-	git notes --ref=refs/heads/master get-ref >actual &&
+	echo refs/notes/refs/heads/default >expect &&
+	git notes --ref=refs/heads/default get-ref >actual &&
 	test_cmp expect actual
 '
 

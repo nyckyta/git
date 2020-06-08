@@ -5,11 +5,11 @@ test_description='merge-recursive rename options
 Test rename detection by examining rename/delete conflicts.
 
 * (HEAD -> rename) rename
-| * (master) delete
+| * (default) delete
 |/
 * base
 
-git diff --name-status base master
+git diff --name-status base default
 D	0-old
 D	1-old
 D	2-old
@@ -118,7 +118,7 @@ test_expect_success 'setup repo' '
 	get_expected_stages 2 &&
 	get_expected_stages 3 &&
 	check_50="false" &&
-	tail="HEAD^ -- HEAD master"
+	tail="HEAD^ -- HEAD default"
 '
 
 test_expect_success 'setup thresholds' '

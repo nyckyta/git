@@ -35,11 +35,11 @@ test_expect_success apply '
 
 test_expect_success 'check result' '
 
-	git diff --exit-code master &&
-	git diff --exit-code --cached master &&
+	git diff --exit-code default &&
+	git diff --exit-code --cached default &&
 	test_tick &&
 	git commit -m replay &&
-	T1=$(git rev-parse "master^{tree}") &&
+	T1=$(git rev-parse "default^{tree}") &&
 	T2=$(git rev-parse "HEAD^{tree}") &&
 	test "z$T1" = "z$T2"
 

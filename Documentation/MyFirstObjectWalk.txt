@@ -24,10 +24,10 @@ revision walk is used for operations like `git log`.
 
 == Setting Up
 
-Create a new branch from `master`.
+Create a new branch from `default`.
 
 ----
-git checkout -b revwalk origin/master
+git checkout -b revwalk origin/default
 ----
 
 We'll put our fiddling into a new command. For fun, let's name it `git walken`.

@@ -23,41 +23,41 @@ test_expect_success 'switch branch' '
 '
 
 test_expect_success 'switch and detach' '
-	test_when_finished git switch master &&
-	test_must_fail git switch master^{commit} &&
-	git switch --detach master^{commit} &&
+	test_when_finished git switch default &&
+	test_must_fail git switch default^{commit} &&
+	git switch --detach default^{commit} &&
 	test_must_fail git symbolic-ref HEAD
 '
 
 test_expect_success 'switch and detach current branch' '
-	test_when_finished git switch master &&
-	git switch master &&
+	test_when_finished git switch default &&
+	git switch default &&
 	git switch --detach &&
 	test_must_fail git symbolic-ref HEAD
 '
 
 test_expect_success 'switch and create branch' '
-	test_when_finished git switch master &&
-	git switch -c temp master^ &&
-	test_cmp_rev master^ refs/heads/temp &&
+	test_when_finished git switch default &&
+	git switch -c temp default^ &&
+	test_cmp_rev default^ refs/heads/temp &&
 	echo refs/heads/temp >expected-branch &&
 	git symbolic-ref HEAD >actual-branch &&
 	test_cmp expected-branch actual-branch
 '
 
 test_expect_success 'force create branch from HEAD' '
-	test_when_finished git switch master &&
-	git switch --detach master &&
+	test_when_finished git switch default &&
+	git switch --detach default &&
 	test_must_fail git switch -c temp &&
 	git switch -C temp &&
-	test_cmp_rev master refs/heads/temp &&
+	test_cmp_rev default refs/heads/temp &&
 	echo refs/heads/temp >expected-branch &&
 	git symbolic-ref HEAD >actual-branch &&
 	test_cmp expected-branch actual-branch
 '
 
 test_expect_success 'new orphan branch from empty' '
-	test_when_finished git switch master &&
+	test_when_finished git switch default &&
 	test_must_fail git switch --orphan new-orphan HEAD &&
 	git switch --orphan new-orphan &&
 	test_commit orphan &&
@@ -69,7 +69,7 @@ test_expect_success 'new orphan branch from empty' '
 '
 
 test_expect_success 'switching ignores file of same branch name' '
-	test_when_finished git switch master &&
+	test_when_finished git switch default &&
 	: >first-branch &&
 	git switch first-branch &&
 	echo refs/heads/first-branch >expected &&
@@ -78,7 +78,7 @@ test_expect_success 'switching ignores file of same branch name' '
 '
 
 test_expect_success 'guess and create branch ' '
-	test_when_finished git switch master &&
+	test_when_finished git switch default &&
 	test_must_fail git switch --no-guess foo &&
 	git switch foo &&
 	echo refs/heads/foo >expected &&

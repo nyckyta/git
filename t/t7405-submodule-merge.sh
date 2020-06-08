@@ -27,7 +27,7 @@ test_expect_success setup '
 	test_tick &&
 	git commit -m root &&
 
-	git checkout -b a master &&
+	git checkout -b a default &&
 	(cd sub &&
 	 echo A > file &&
 	 git add file &&
@@ -37,7 +37,7 @@ test_expect_success setup '
 	test_tick &&
 	git commit -m a &&
 
-	git checkout -b b master &&
+	git checkout -b b default &&
 	(cd sub &&
 	 echo B > file &&
 	 git add file &&
@@ -237,22 +237,22 @@ test_expect_success 'setup for recursive merge with submodule' '
 	 (cd sub &&
 	  git init &&
 	  test_commit a &&
-	  git checkout -b sub-b master &&
+	  git checkout -b sub-b default &&
 	  test_commit b &&
-	  git checkout -b sub-c master &&
+	  git checkout -b sub-c default &&
 	  test_commit c &&
 	  git checkout -b sub-bc sub-b &&
 	  git merge sub-c &&
 	  git checkout -b sub-cb sub-c &&
 	  git merge sub-b &&
-	  git checkout master) &&
+	  git checkout default) &&
 	 git add sub &&
 	 git commit -m a &&
-	 git checkout -b top-b master &&
+	 git checkout -b top-b default &&
 	 (cd sub && git checkout sub-b) &&
 	 git add sub &&
 	 git commit -m b &&
-	 git checkout -b top-c master &&
+	 git checkout -b top-c default &&
 	 (cd sub && git checkout sub-c) &&
 	 git add sub &&
 	 git commit -m c &&

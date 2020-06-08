@@ -276,7 +276,7 @@ static void read_branches_file(struct remote *remote)
 
 	/*
 	 * The branches file would have URL and optionally
-	 * #branch specified.  The "master" (or specified) branch is
+	 * #branch specified.  The "default" (or specified) branch is
 	 * fetched and stored in the local branch matching the
 	 * remote name.
 	 */
@@ -284,7 +284,7 @@ static void read_branches_file(struct remote *remote)
 	if (frag)
 		*(frag++) = '\0';
 	else
-		frag = "master";
+		frag = "default";
 
 	add_url_alias(remote, strbuf_detach(&buf, NULL));
 	strbuf_addf(&buf, "refs/heads/%s:refs/heads/%s",
@@ -293,7 +293,7 @@ static void read_branches_file(struct remote *remote)
 
 	/*
 	 * Cogito compatible push: push current HEAD to remote #branch
-	 * (master if missing)
+	 * (default if missing)
 	 */
 	strbuf_reset(&buf);
 	strbuf_addf(&buf, "HEAD:refs/heads/%s", frag);
@@ -866,10 +866,10 @@ int count_refspec_match(const char *pattern,
 
 		/* A match is "weak" if it is with refs outside
 		 * heads or tags, and did not specify the pattern
-		 * in full (e.g. "refs/remotes/origin/master") or at
-		 * least from the toplevel (e.g. "remotes/origin/master");
-		 * otherwise "git push $URL master" would result in
-		 * ambiguity between remotes/origin/master and heads/master
+		 * in full (e.g. "refs/remotes/origin/default") or at
+		 * least from the toplevel (e.g. "remotes/origin/default");
+		 * otherwise "git push $URL default" would result in
+		 * ambiguity between remotes/origin/default and heads/default
 		 * at the remote site.
 		 */
 		if (namelen != patlen &&
@@ -2097,9 +2097,9 @@ struct ref *guess_remote_head(const struct ref *head,
 	if (head->symref)
 		return copy_ref(find_ref_by_name(refs, head->symref));
 
-	/* If refs/heads/master could be right, it is. */
+	/* If refs/heads/default could be right, it is. */
 	if (!all) {
-		r = find_ref_by_name(refs, "refs/heads/master");
+		r = find_ref_by_name(refs, "refs/heads/default");
 		if (r && oideq(&r->old_oid, &head->old_oid))
 			return copy_ref(r);
 	}

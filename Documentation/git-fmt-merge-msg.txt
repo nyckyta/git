@@ -61,11 +61,11 @@ EXAMPLES
 --------
 
 ---------
-$ git fetch origin master
+$ git fetch origin default
 $ git fmt-merge-msg --log <$GIT_DIR/FETCH_HEAD
 ---------
 
-Print a log message describing a merge of the "master" branch from
+Print a log message describing a merge of the "default" branch from
 the "origin" remote.
 
 

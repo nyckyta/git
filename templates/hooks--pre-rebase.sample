@@ -34,7 +34,7 @@ refs/heads/??/*)
 esac
 
 # Now we are dealing with a topic branch being rebased
-# on top of master.  Is it OK to rebase it?
+# on top of default.  Is it OK to rebase it?
 
 # Does the topic really exist?
 git show-ref -q "$topic" || {
@@ -42,23 +42,23 @@ git show-ref -q "$topic" || {
 	exit 1
 }
 
-# Is topic fully merged to master?
-not_in_master=`git rev-list --pretty=oneline ^master "$topic"`
+# Is topic fully merged to default?
+not_in_master=`git rev-list --pretty=oneline ^default "$topic"`
 if test -z "$not_in_master"
 then
-	echo >&2 "$topic is fully merged to master; better remove it."
+	echo >&2 "$topic is fully merged to default; better remove it."
 	exit 1 ;# we could allow it, but there is no point.
 fi
 
 # Is topic ever merged to next?  If so you should not be rebasing it.
-only_next_1=`git rev-list ^master "^$topic" ${publish} | sort`
-only_next_2=`git rev-list ^master           ${publish} | sort`
+only_next_1=`git rev-list ^default "^$topic" ${publish} | sort`
+only_next_2=`git rev-list ^default           ${publish} | sort`
 if test "$only_next_1" = "$only_next_2"
 then
-	not_in_topic=`git rev-list "^$topic" master`
+	not_in_topic=`git rev-list "^$topic" default`
 	if test -z "$not_in_topic"
 	then
-		echo >&2 "$topic is already up to date with master"
+		echo >&2 "$topic is already up to date with default"
 		exit 1 ;# we could allow it, but there is no point.
 	else
 		exit 0
@@ -95,13 +95,13 @@ published from being rewound.
 
 The workflow assumed here is:
 
- * Once a topic branch forks from "master", "master" is never
+ * Once a topic branch forks from "default", "default" is never
    merged into it again (either directly or indirectly).
 
- * Once a topic branch is fully cooked and merged into "master",
+ * Once a topic branch is fully cooked and merged into "default",
    it is deleted.  If you need to build on top of it to correct
    earlier mistakes, a new topic branch is created by forking at
-   the tip of the "master".  This is not strictly necessary, but
+   the tip of the "default".  This is not strictly necessary, but
    it makes it easier to keep your history simple.
 
  * Whenever you need to test or publish your changes to topic
@@ -120,13 +120,13 @@ With this workflow, you would want to know:
     affecting other people.  But once it is published, you would
     not want to rewind it.
 
-(2) ... if a topic branch has been fully merged to "master".
+(2) ... if a topic branch has been fully merged to "default".
     Then you can delete it.  More importantly, you should not
     build on top of it -- other people may already want to
     change things related to the topic as patches against your
-    "master", so if you need further changes, it is better to
+    "default", so if you need further changes, it is better to
     fork the topic (perhaps with the same name) afresh from the
-    tip of "master".
+    tip of "default".
 
 Let's look at this example:
 
@@ -138,14 +138,14 @@ Let's look at this example:
 	      /   /   /             \         /
 	     /   /   /   b---b C     \       /
 	    /   /   /   /             \     /
-    ---o---o---o---o---o---o---o---o---o---o---o "master"
+    ---o---o---o---o---o---o---o---o---o---o---o "default"
 
 
 A, B and C are topic branches.
 
  * A has one fix since it was merged up to "next".
 
- * B has finished.  It has been fully merged up to "master" and "next",
+ * B has finished.  It has been fully merged up to "default" and "next",
    and is ready to be deleted.
 
  * C has not merged to "next" at all.
@@ -155,15 +155,15 @@ B to be deleted.
 
 To compute (1):
 
-	git rev-list ^master ^topic next
-	git rev-list ^master        next
+	git rev-list ^default ^topic next
+	git rev-list ^default        next
 
 	if these match, topic has not merged in next at all.
 
 To compute (2):
 
-	git rev-list master..topic
+	git rev-list default..topic
 
-	if this is empty, it is fully merged to "master".
+	if this is empty, it is fully merged to "default".
 
 DOC_END

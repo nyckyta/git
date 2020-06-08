@@ -18,7 +18,7 @@ test_expect_success setup '
 	git add git &&
 	test_tick &&
 	git commit -m side &&
-	git checkout master &&
+	git checkout default &&
 	git log --pretty=oneline --abbrev-commit --graph --all &&
 	git branch test side
 '
@@ -26,14 +26,14 @@ test_expect_success setup '
 test_expect_success 'rebase' '
 	git checkout test &&
 	git reset --hard side &&
-	git rebase master &&
+	git rebase default &&
 	test "z$(cat git)" = zworld
 '
 
 test_expect_success 'rebase -i' '
 	git checkout test &&
 	git reset --hard side &&
-	EDITOR=true git rebase -i master &&
+	EDITOR=true git rebase -i default &&
 	test "z$(cat git)" = zworld
 '
 
@@ -49,53 +49,53 @@ EOF
 test_expect_success 'pre-rebase hook gets correct input (1)' '
 	git checkout test &&
 	git reset --hard side &&
-	git rebase master &&
+	git rebase default &&
 	test "z$(cat git)" = zworld &&
-	test "z$(cat .git/PRE-REBASE-INPUT)" = zmaster,
+	test "z$(cat .git/PRE-REBASE-INPUT)" = zdefault,
 
 '
 
 test_expect_success 'pre-rebase hook gets correct input (2)' '
 	git checkout test &&
 	git reset --hard side &&
-	git rebase master test &&
+	git rebase default test &&
 	test "z$(cat git)" = zworld &&
-	test "z$(cat .git/PRE-REBASE-INPUT)" = zmaster,test
+	test "z$(cat .git/PRE-REBASE-INPUT)" = zdefault,test
 '
 
 test_expect_success 'pre-rebase hook gets correct input (3)' '
 	git checkout test &&
 	git reset --hard side &&
-	git checkout master &&
-	git rebase master test &&
+	git checkout default &&
+	git rebase default test &&
 	test "z$(cat git)" = zworld &&
-	test "z$(cat .git/PRE-REBASE-INPUT)" = zmaster,test
+	test "z$(cat .git/PRE-REBASE-INPUT)" = zdefault,test
 '
 
 test_expect_success 'pre-rebase hook gets correct input (4)' '
 	git checkout test &&
 	git reset --hard side &&
-	EDITOR=true git rebase -i master &&
+	EDITOR=true git rebase -i default &&
 	test "z$(cat git)" = zworld &&
-	test "z$(cat .git/PRE-REBASE-INPUT)" = zmaster,
+	test "z$(cat .git/PRE-REBASE-INPUT)" = zdefault,
 
 '
 
 test_expect_success 'pre-rebase hook gets correct input (5)' '
 	git checkout test &&
 	git reset --hard side &&
-	EDITOR=true git rebase -i master test &&
+	EDITOR=true git rebase -i default test &&
 	test "z$(cat git)" = zworld &&
-	test "z$(cat .git/PRE-REBASE-INPUT)" = zmaster,test
+	test "z$(cat .git/PRE-REBASE-INPUT)" = zdefault,test
 '
 
 test_expect_success 'pre-rebase hook gets correct input (6)' '
 	git checkout test &&
 	git reset --hard side &&
-	git checkout master &&
-	EDITOR=true git rebase -i master test &&
+	git checkout default &&
+	EDITOR=true git rebase -i default test &&
 	test "z$(cat git)" = zworld &&
-	test "z$(cat .git/PRE-REBASE-INPUT)" = zmaster,test
+	test "z$(cat .git/PRE-REBASE-INPUT)" = zdefault,test
 '
 
 test_expect_success 'setup pre-rebase hook that fails' '
@@ -110,7 +110,7 @@ EOF
 test_expect_success 'pre-rebase hook stops rebase (1)' '
 	git checkout test &&
 	git reset --hard side &&
-	test_must_fail git rebase master &&
+	test_must_fail git rebase default &&
 	test "z$(git symbolic-ref HEAD)" = zrefs/heads/test &&
 	test 0 = $(git rev-list HEAD...side | wc -l)
 '
@@ -118,7 +118,7 @@ test_expect_success 'pre-rebase hook stops rebase (1)' '
 test_expect_success 'pre-rebase hook stops rebase (2)' '
 	git checkout test &&
 	git reset --hard side &&
-	test_must_fail env EDITOR=: git rebase -i master &&
+	test_must_fail env EDITOR=: git rebase -i default &&
 	test "z$(git symbolic-ref HEAD)" = zrefs/heads/test &&
 	test 0 = $(git rev-list HEAD...side | wc -l)
 '
@@ -126,7 +126,7 @@ test_expect_success 'pre-rebase hook stops rebase (2)' '
 test_expect_success 'rebase --no-verify overrides pre-rebase (1)' '
 	git checkout test &&
 	git reset --hard side &&
-	git rebase --no-verify master &&
+	git rebase --no-verify default &&
 	test "z$(git symbolic-ref HEAD)" = zrefs/heads/test &&
 	test "z$(cat git)" = zworld
 '
@@ -134,7 +134,7 @@ test_expect_success 'rebase --no-verify overrides pre-rebase (1)' '
 test_expect_success 'rebase --no-verify overrides pre-rebase (2)' '
 	git checkout test &&
 	git reset --hard side &&
-	EDITOR=true git rebase --no-verify -i master &&
+	EDITOR=true git rebase --no-verify -i default &&
 	test "z$(git symbolic-ref HEAD)" = zrefs/heads/test &&
 	test "z$(cat git)" = zworld
 '

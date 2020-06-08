@@ -158,7 +158,7 @@ static void parse_one_symref_info(struct string_list *symref, const char *val, i
 
 	if (!len)
 		return; /* just "symref" */
-	/* e.g. "symref=HEAD:refs/heads/master" */
+	/* e.g. "symref=HEAD:refs/heads/default" */
 	sym = xmemdupz(val, len);
 	target = strchr(sym, ':');
 	if (!target)

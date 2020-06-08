@@ -16,24 +16,24 @@ test_expect_success 'setup' '
 	git remote add other other.git &&
 	test_commit base &&
 	git push origin HEAD &&
-	git branch --set-upstream-to=origin/master master &&
-	git branch --track topic origin/master &&
+	git branch --set-upstream-to=origin/default default &&
+	git branch --track topic origin/default &&
 	git push origin topic &&
 	git push other topic
 '
 
 test_expect_success '@{push} with default=nothing' '
 	test_config push.default nothing &&
-	test_must_fail git rev-parse master@{push} &&
-	test_must_fail git rev-parse master@{PUSH} &&
-	test_must_fail git rev-parse master@{PuSH}
+	test_must_fail git rev-parse default@{push} &&
+	test_must_fail git rev-parse default@{PUSH} &&
+	test_must_fail git rev-parse default@{PuSH}
 '
 
 test_expect_success '@{push} with default=simple' '
 	test_config push.default simple &&
-	resolve master@{push} refs/remotes/origin/master &&
-	resolve master@{PUSH} refs/remotes/origin/master &&
-	resolve master@{pUSh} refs/remotes/origin/master
+	resolve default@{push} refs/remotes/origin/default &&
+	resolve default@{PUSH} refs/remotes/origin/default &&
+	resolve default@{pUSh} refs/remotes/origin/default
 '
 
 test_expect_success 'triangular @{push} fails with default=simple' '

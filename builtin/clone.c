@@ -1264,8 +1264,8 @@ int cmd_clone(int argc, const char **argv, const char *prefix)
 		remote_head = NULL;
 		option_no_checkout = 1;
 		if (!option_bare)
-			install_branch_config(0, "master", option_origin,
-					      "refs/heads/master");
+			install_branch_config(0, "default", option_origin,
+					      "refs/heads/default");
 	}
 
 	write_refspec_config(src_ref_prefix, our_head_points_at,

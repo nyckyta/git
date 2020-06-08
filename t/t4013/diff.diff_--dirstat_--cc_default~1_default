@@ -1,0 +1,3 @@
+$ git diff --dirstat --cc default~1 default
+  40.0% dir/
+$

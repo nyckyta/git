@@ -518,10 +518,10 @@ static const char *anonymize_refname(const char *refname)
 	int i;
 
 	/*
-	 * We also leave "master" as a special case, since it does not reveal
+	 * We also leave "default" as a special case, since it does not reveal
 	 * anything interesting.
 	 */
-	if (!strcmp(refname, "refs/heads/master"))
+	if (!strcmp(refname, "refs/heads/default"))
 		return refname;
 
 	strbuf_reset(&anon);
@@ -1011,7 +1011,7 @@ static void handle_tags_and_duplicates(struct string_list *extras)
 				/*
 				 * Getting here means we have a commit which
 				 * was excluded by a negative refspec (e.g.
-				 * fast-export ^master master).  If we are
+				 * fast-export ^default default).  If we are
 				 * referencing excluded commits, set the ref
 				 * to the exact commit.  Otherwise, the user
 				 * wants the branch exported but every commit

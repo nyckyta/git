@@ -24,7 +24,7 @@ test_expect_success 'first branch switch' '
 
 test_expect_success '"checkout -" switches back' '
 	git checkout - &&
-	test "z$(git symbolic-ref HEAD)" = "zrefs/heads/master"
+	test "z$(git symbolic-ref HEAD)" = "zrefs/heads/default"
 '
 
 test_expect_success '"checkout -" switches forth' '
@@ -98,56 +98,56 @@ test_expect_success 'merge base test setup' '
 	git commit -m third
 '
 
-test_expect_success 'another...master' '
+test_expect_success 'another...default' '
 	git checkout another &&
-	git checkout another...master &&
-	test "z$(git rev-parse --verify HEAD)" = "z$(git rev-parse --verify master^)"
+	git checkout another...default &&
+	test "z$(git rev-parse --verify HEAD)" = "z$(git rev-parse --verify default^)"
 '
 
-test_expect_success '...master' '
+test_expect_success '...default' '
 	git checkout another &&
-	git checkout ...master &&
-	test "z$(git rev-parse --verify HEAD)" = "z$(git rev-parse --verify master^)"
+	git checkout ...default &&
+	test "z$(git rev-parse --verify HEAD)" = "z$(git rev-parse --verify default^)"
 '
 
-test_expect_success 'master...' '
+test_expect_success 'default...' '
 	git checkout another &&
-	git checkout master... &&
-	test "z$(git rev-parse --verify HEAD)" = "z$(git rev-parse --verify master^)"
+	git checkout default... &&
+	test "z$(git rev-parse --verify HEAD)" = "z$(git rev-parse --verify default^)"
 '
 
 test_expect_success '"checkout -" works after a rebase A' '
-	git checkout master &&
+	git checkout default &&
 	git checkout other &&
-	git rebase master &&
+	git rebase default &&
 	git checkout - &&
-	test "z$(git symbolic-ref HEAD)" = "zrefs/heads/master"
+	test "z$(git symbolic-ref HEAD)" = "zrefs/heads/default"
 '
 
 test_expect_success '"checkout -" works after a rebase A B' '
-	git branch moodle master~1 &&
-	git checkout master &&
+	git branch moodle default~1 &&
+	git checkout default &&
 	git checkout other &&
-	git rebase master moodle &&
+	git rebase default moodle &&
 	git checkout - &&
-	test "z$(git symbolic-ref HEAD)" = "zrefs/heads/master"
+	test "z$(git symbolic-ref HEAD)" = "zrefs/heads/default"
 '
 
 test_expect_success '"checkout -" works after a rebase -i A' '
-	git checkout master &&
+	git checkout default &&
 	git checkout other &&
-	git rebase -i master &&
+	git rebase -i default &&
 	git checkout - &&
-	test "z$(git symbolic-ref HEAD)" = "zrefs/heads/master"
+	test "z$(git symbolic-ref HEAD)" = "zrefs/heads/default"
 '
 
 test_expect_success '"checkout -" works after a rebase -i A B' '
-	git branch foodle master~1 &&
-	git checkout master &&
+	git branch foodle default~1 &&
+	git checkout default &&
 	git checkout other &&
-	git rebase master foodle &&
+	git rebase default foodle &&
 	git checkout - &&
-	test "z$(git symbolic-ref HEAD)" = "zrefs/heads/master"
+	test "z$(git symbolic-ref HEAD)" = "zrefs/heads/default"
 '
 
 test_done

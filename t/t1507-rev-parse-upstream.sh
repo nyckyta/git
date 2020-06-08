@@ -10,20 +10,20 @@ test_expect_success 'setup' '
 	test_commit 1 &&
 	git checkout -b side &&
 	test_commit 2 &&
-	git checkout master &&
+	git checkout default &&
 	git clone . clone &&
 	test_commit 3 &&
 	(cd clone &&
 	 test_commit 4 &&
 	 git branch --track my-side origin/side &&
-	 git branch --track local-master master &&
+	 git branch --track local-default default &&
 	 git branch --track fun@ny origin/side &&
 	 git branch --track @funny origin/side &&
 	 git branch --track funny@ origin/side &&
-	 git remote add -t master master-only .. &&
-	 git fetch master-only &&
+	 git remote add -t default default-only .. &&
+	 git fetch default-only &&
 	 git branch bad-upstream &&
-	 git config branch.bad-upstream.remote master-only &&
+	 git config branch.bad-upstream.remote default-only &&
 	 git config branch.bad-upstream.merge refs/heads/side
 	)
 '
@@ -39,7 +39,7 @@ error_message () {
 }
 
 test_expect_success '@{upstream} resolves to correct full name' '
-	echo refs/remotes/origin/master >expect &&
+	echo refs/remotes/origin/default >expect &&
 	git -C clone rev-parse --symbolic-full-name @{upstream} >actual &&
 	test_cmp expect actual &&
 	git -C clone rev-parse --symbolic-full-name @{UPSTREAM} >actual &&
@@ -49,7 +49,7 @@ test_expect_success '@{upstream} resolves to correct full name' '
 '
 
 test_expect_success '@{u} resolves to correct full name' '
-	echo refs/remotes/origin/master >expect &&
+	echo refs/remotes/origin/default >expect &&
 	git -C clone rev-parse --symbolic-full-name @{u} >actual &&
 	test_cmp expect actual &&
 	git -C clone rev-parse --symbolic-full-name @{U} >actual &&
@@ -132,7 +132,7 @@ test_expect_success 'checkout -b new my-side@{u} forks from the same' '
 test_expect_success 'merge my-side@{u} records the correct name' '
 (
 	cd clone &&
-	git checkout master &&
+	git checkout default &&
 	test_might_fail git branch -D new &&
 	git branch -t new my-side@{u} &&
 	git merge -s ours new@{u} &&
@@ -143,24 +143,24 @@ test_expect_success 'merge my-side@{u} records the correct name' '
 '
 
 test_expect_success 'branch -d other@{u}' '
-	git checkout -t -b other master &&
+	git checkout -t -b other default &&
 	git branch -d @{u} &&
-	git for-each-ref refs/heads/master >actual &&
+	git for-each-ref refs/heads/default >actual &&
 	test_must_be_empty actual
 '
 
 test_expect_success 'checkout other@{u}' '
-	git branch -f master HEAD &&
-	git checkout -t -b another master &&
+	git branch -f default HEAD &&
+	git checkout -t -b another default &&
 	git checkout @{u} &&
 	git symbolic-ref HEAD >actual &&
-	echo refs/heads/master >expect &&
+	echo refs/heads/default >expect &&
 	test_cmp expect actual
 '
 
 test_expect_success 'branch@{u} works when tracking a local branch' '
-	echo refs/heads/master >expect &&
-	git -C clone rev-parse --symbolic-full-name local-master@{u} >actual &&
+	echo refs/heads/default >expect &&
+	git -C clone rev-parse --symbolic-full-name local-default@{u} >actual &&
 	test_cmp expect actual
 '
 
@@ -174,7 +174,7 @@ test_expect_success 'branch@{u} error message when no upstream' '
 
 test_expect_success '@{u} error message when no upstream' '
 	cat >expect <<-EOF &&
-	fatal: no upstream configured for branch ${SQ}master${SQ}
+	fatal: no upstream configured for branch ${SQ}default${SQ}
 	EOF
 	test_must_fail git rev-parse --verify @{u} 2>actual &&
 	test_i18ncmp expect actual
@@ -208,14 +208,14 @@ test_expect_success 'branch@{u} error message if upstream branch not fetched' '
 test_expect_success 'pull works when tracking a local branch' '
 (
 	cd clone &&
-	git checkout local-master &&
+	git checkout local-default &&
 	git pull
 )
 '
 
 # makes sense if the previous one succeeded
 test_expect_success '@{u} works when tracking a local branch' '
-	echo refs/heads/master >expect &&
+	echo refs/heads/default >expect &&
 	git -C clone rev-parse --symbolic-full-name @{u} >actual &&
 	test_cmp expect actual
 '
@@ -224,7 +224,7 @@ test_expect_success 'log -g other@{u}' '
 	commit=$(git rev-parse HEAD) &&
 	cat >expect <<-EOF &&
 	commit $commit
-	Reflog: master@{0} (C O Mitter <committer@example.com>)
+	Reflog: default@{0} (C O Mitter <committer@example.com>)
 	Reflog message: branch: Created from HEAD
 	Author: A U Thor <author@example.com>
 	Date:   Thu Apr 7 15:15:13 2005 -0700
@@ -239,7 +239,7 @@ test_expect_success 'log -g other@{u}@{now}' '
 	commit=$(git rev-parse HEAD) &&
 	cat >expect <<-EOF &&
 	commit $commit
-	Reflog: master@{Thu Apr 7 15:17:13 2005 -0700} (C O Mitter <committer@example.com>)
+	Reflog: default@{Thu Apr 7 15:17:13 2005 -0700} (C O Mitter <committer@example.com>)
 	Reflog message: branch: Created from HEAD
 	Author: A U Thor <author@example.com>
 	Date:   Thu Apr 7 15:15:13 2005 -0700

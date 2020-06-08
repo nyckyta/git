@@ -18,7 +18,7 @@ test_expect_success 'create http-accessible bare repository' '
 	 git --bare init
 	) &&
 	git remote add public "$HTTPD_DOCUMENT_ROOT_PATH/repo.git" &&
-	git push public master:master
+	git push public default:default
 '
 
 setup_askpass_helper
@@ -204,9 +204,9 @@ test_expect_success 'invalid Content-Type rejected' '
 
 test_expect_success 'create namespaced refs' '
 	test_commit namespaced &&
-	git push public HEAD:refs/namespaces/ns/refs/heads/master &&
+	git push public HEAD:refs/namespaces/ns/refs/heads/default &&
 	git --git-dir="$HTTPD_DOCUMENT_ROOT_PATH/repo.git" \
-		symbolic-ref refs/namespaces/ns/HEAD refs/namespaces/ns/refs/heads/master
+		symbolic-ref refs/namespaces/ns/HEAD refs/namespaces/ns/refs/heads/default
 '
 
 test_expect_success 'smart clone respects namespace' '
@@ -237,7 +237,7 @@ test_expect_success 'cookies stored in http.cookiefile when http.savecookies set
 	EOF
 	git config http.cookiefile cookies.txt &&
 	git config http.savecookies true &&
-	git ls-remote $HTTPD_URL/smart_cookies/repo.git master &&
+	git ls-remote $HTTPD_URL/smart_cookies/repo.git default &&
 
 	# NEEDSWORK: If the overspecification of the expected result is reduced, we
 	# might be able to run this test in all protocol versions.
@@ -310,7 +310,7 @@ test_expect_success 'large fetch-pack requests can be sent using chunked encodin
 test_expect_success 'test allowreachablesha1inwant' '
 	test_when_finished "rm -rf test_reachable.git" &&
 	server="$HTTPD_DOCUMENT_ROOT_PATH/repo.git" &&
-	master_sha=$(git -C "$server" rev-parse refs/heads/master) &&
+	master_sha=$(git -C "$server" rev-parse refs/heads/default) &&
 	git -C "$server" config uploadpack.allowreachablesha1inwant 1 &&
 
 	git init --bare test_reachable.git &&
@@ -329,7 +329,7 @@ test_expect_success 'test allowreachablesha1inwant with unreachable' '
 	git push public :refs/heads/doomed &&
 
 	server="$HTTPD_DOCUMENT_ROOT_PATH/repo.git" &&
-	master_sha=$(git -C "$server" rev-parse refs/heads/master) &&
+	master_sha=$(git -C "$server" rev-parse refs/heads/default) &&
 	git -C "$server" config uploadpack.allowreachablesha1inwant 1 &&
 
 	git init --bare test_reachable.git &&
@@ -351,7 +351,7 @@ test_expect_success 'test allowanysha1inwant with unreachable' '
 	git push public :refs/heads/doomed &&
 
 	server="$HTTPD_DOCUMENT_ROOT_PATH/repo.git" &&
-	master_sha=$(git -C "$server" rev-parse refs/heads/master) &&
+	master_sha=$(git -C "$server" rev-parse refs/heads/default) &&
 	git -C "$server" config uploadpack.allowreachablesha1inwant 1 &&
 
 	git init --bare test_reachable.git &&
@@ -410,8 +410,8 @@ test_expect_success 'using fetch command in remote-curl updates refs' '
 	test_commit -C "$SERVER" bar &&
 	git -C client -c protocol.version=0 fetch &&
 
-	git -C "$SERVER" rev-parse master >expect &&
-	git -C client rev-parse origin/master >actual &&
+	git -C "$SERVER" rev-parse default >expect &&
+	git -C client rev-parse origin/default >actual &&
 	test_cmp expect actual
 '
 

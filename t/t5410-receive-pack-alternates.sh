@@ -7,9 +7,9 @@ test_description='git receive-pack with alternate ref filtering'
 test_expect_success 'setup' '
 	test_commit base &&
 	git clone -s --bare . fork &&
-	git checkout -b public/branch master &&
+	git checkout -b public/branch default &&
 	test_commit public &&
-	git checkout -b private/branch master &&
+	git checkout -b private/branch default &&
 	test_commit private
 '
 

@@ -43,7 +43,7 @@ test_expect_success setup '
 	git add side &&
 	test_tick && git commit -m "Side root" &&
 	note J &&
-	git checkout master &&
+	git checkout default &&
 
 	echo "Hello" >file &&
 	echo "second" >lost &&
@@ -65,7 +65,7 @@ test_expect_success setup '
 	note D &&
 
 	test_tick &&
-	test_must_fail git merge -m "merge" master &&
+	test_must_fail git merge -m "merge" default &&
 	>lost && git commit -a -m "merge" &&
 	note E &&
 
@@ -74,7 +74,7 @@ test_expect_success setup '
 	test_tick && git commit -m "Irrelevant change" &&
 	note F &&
 
-	git checkout master &&
+	git checkout default &&
 	echo "Yet another" >elif &&
 	git add elif &&
 	test_tick && git commit -m "Another irrelevant change" &&
@@ -87,7 +87,7 @@ test_expect_success setup '
 	test_tick && git commit -a -m "Final change" &&
 	note I &&
 
-	git checkout master &&
+	git checkout default &&
 	test_tick && git merge --allow-unrelated-histories -m "Coolest" unrelated &&
 	note K &&
 

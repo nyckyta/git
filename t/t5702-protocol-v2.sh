@@ -36,10 +36,10 @@ test_expect_success 'ref advertisement is filtered with ls-remote using protocol
 	test_when_finished "rm -f log" &&
 
 	GIT_TRACE_PACKET="$(pwd)/log" git -c protocol.version=2 \
-		ls-remote "$GIT_DAEMON_URL/parent" master >actual &&
+		ls-remote "$GIT_DAEMON_URL/parent" default >actual &&
 
 	cat >expect <<-EOF &&
-	$(git -C "$daemon_parent" rev-parse refs/heads/master)$(printf "\t")refs/heads/master
+	$(git -C "$daemon_parent" rev-parse refs/heads/default)$(printf "\t")refs/heads/default
 	EOF
 
 	test_cmp expect actual
@@ -69,7 +69,7 @@ test_expect_success 'fetch with git:// using protocol v2' '
 	GIT_TRACE_PACKET="$(pwd)/log" git -C daemon_child -c protocol.version=2 \
 		fetch &&
 
-	git -C daemon_child log -1 --format=%s origin/master >actual &&
+	git -C daemon_child log -1 --format=%s origin/default >actual &&
 	git -C "$daemon_parent" log -1 --format=%s >expect &&
 	test_cmp expect actual &&
 
@@ -118,7 +118,7 @@ test_expect_success 'push with git:// and a config of v2 does not request v2' '
 	test_commit -C daemon_child three &&
 
 	# Push to another branch, as the target repository has the
-	# master branch checked out and we cannot push into it.
+	# default branch checked out and we cannot push into it.
 	GIT_TRACE_PACKET="$(pwd)/log" git -C daemon_child -c protocol.version=2 \
 		push origin HEAD:client_branch &&
 
@@ -158,10 +158,10 @@ test_expect_success 'ref advertisement is filtered with ls-remote using protocol
 	test_when_finished "rm -f log" &&
 
 	GIT_TRACE_PACKET="$(pwd)/log" git -c protocol.version=2 \
-		ls-remote "file://$(pwd)/file_parent" master >actual &&
+		ls-remote "file://$(pwd)/file_parent" default >actual &&
 
 	cat >expect <<-EOF &&
-	$(git -C file_parent rev-parse refs/heads/master)$(printf "\t")refs/heads/master
+	$(git -C file_parent rev-parse refs/heads/default)$(printf "\t")refs/heads/default
 	EOF
 
 	test_cmp expect actual
@@ -171,10 +171,10 @@ test_expect_success 'server-options are sent when using ls-remote' '
 	test_when_finished "rm -f log" &&
 
 	GIT_TRACE_PACKET="$(pwd)/log" git -c protocol.version=2 \
-		ls-remote -o hello -o world "file://$(pwd)/file_parent" master >actual &&
+		ls-remote -o hello -o world "file://$(pwd)/file_parent" default >actual &&
 
 	cat >expect <<-EOF &&
-	$(git -C file_parent rev-parse refs/heads/master)$(printf "\t")refs/heads/master
+	$(git -C file_parent rev-parse refs/heads/default)$(printf "\t")refs/heads/default
 	EOF
 
 	test_cmp expect actual &&
@@ -184,7 +184,7 @@ test_expect_success 'server-options are sent when using ls-remote' '
 
 test_expect_success 'warn if using server-option with ls-remote with legacy protocol' '
 	test_must_fail env GIT_TEST_PROTOCOL_VERSION=0 git -c protocol.version=0 \
-		ls-remote -o hello -o world "file://$(pwd)/file_parent" master 2>err &&
+		ls-remote -o hello -o world "file://$(pwd)/file_parent" default 2>err &&
 
 	test_i18ngrep "see protocol.version in" err &&
 	test_i18ngrep "server options require protocol version 2 or later" err
@@ -217,7 +217,7 @@ test_expect_success 'fetch with file:// using protocol v2' '
 	GIT_TRACE_PACKET="$(pwd)/log" git -C file_child -c protocol.version=2 \
 		fetch origin &&
 
-	git -C file_child log -1 --format=%s origin/master >actual &&
+	git -C file_child log -1 --format=%s origin/default >actual &&
 	git -C file_parent log -1 --format=%s >expect &&
 	test_cmp expect actual &&
 
@@ -232,13 +232,13 @@ test_expect_success 'ref advertisement is filtered during fetch using protocol v
 	git -C file_parent branch unwanted-branch three &&
 
 	GIT_TRACE_PACKET="$(pwd)/log" git -C file_child -c protocol.version=2 \
-		fetch origin master &&
+		fetch origin default &&
 
-	git -C file_child log -1 --format=%s origin/master >actual &&
+	git -C file_child log -1 --format=%s origin/default >actual &&
 	git -C file_parent log -1 --format=%s >expect &&
 	test_cmp expect actual &&
 
-	grep "refs/heads/master" log &&
+	grep "refs/heads/default" log &&
 	! grep "refs/heads/unwanted-branch" log
 '
 
@@ -248,9 +248,9 @@ test_expect_success 'server-options are sent when fetching' '
 	test_commit -C file_parent four &&
 
 	GIT_TRACE_PACKET="$(pwd)/log" git -C file_child -c protocol.version=2 \
-		fetch -o hello -o world origin master &&
+		fetch -o hello -o world origin default &&
 
-	git -C file_child log -1 --format=%s origin/master >actual &&
+	git -C file_child log -1 --format=%s origin/default >actual &&
 	git -C file_parent log -1 --format=%s >expect &&
 	test_cmp expect actual &&
 
@@ -264,7 +264,7 @@ test_expect_success 'warn if using server-option with fetch with legacy protocol
 	git init temp_child &&
 
 	test_must_fail env GIT_TEST_PROTOCOL_VERSION=0 git -C temp_child -c protocol.version=0 \
-		fetch -o hello -o world "file://$(pwd)/file_parent" master 2>err &&
+		fetch -o hello -o world "file://$(pwd)/file_parent" default 2>err &&
 
 	test_i18ngrep "see protocol.version in" err &&
 	test_i18ngrep "server options require protocol version 2 or later" err
@@ -325,7 +325,7 @@ test_expect_success 'partial clone' '
 	grep "version 2" trace &&
 
 	# Ensure that the old version of the file is missing
-	git -C client rev-list --quiet --objects --missing=print master \
+	git -C client rev-list --quiet --objects --missing=print default \
 		>observed.oids &&
 	grep "$(git -C server rev-parse message1:a.txt)" observed.oids &&
 
@@ -351,7 +351,7 @@ test_expect_success 'partial fetch' '
 	test_config -C client extensions.partialClone "$SERVER" &&
 
 	GIT_TRACE_PACKET="$(pwd)/trace" git -C client -c protocol.version=2 \
-		fetch --filter=blob:none "$SERVER" master:refs/heads/other &&
+		fetch --filter=blob:none "$SERVER" default:refs/heads/other &&
 	grep "version 2" trace &&
 
 	# Ensure that the old version of the file is missing
@@ -395,7 +395,7 @@ test_expect_success 'even with handcrafted request, filter does not work if not 
 	test-tool pkt-line pack >in <<-EOF &&
 	command=fetch
 	0001
-	want $(git -C server rev-parse master)
+	want $(git -C server rev-parse default)
 	filter blob:none
 	0000
 	EOF
@@ -539,7 +539,7 @@ test_expect_success 'deepen-relative' '
 	test_commit -C server four &&
 
 	# Sanity check that only "three" is downloaded
-	git -C client log --pretty=tformat:%s master >actual &&
+	git -C client log --pretty=tformat:%s default >actual &&
 	echo three >expected &&
 	test_cmp expected actual &&
 
@@ -548,7 +548,7 @@ test_expect_success 'deepen-relative' '
 	# Ensure that protocol v2 is used
 	grep "fetch< version 2" trace &&
 
-	git -C client log --pretty=tformat:%s origin/master >actual &&
+	git -C client log --pretty=tformat:%s origin/default >actual &&
 	cat >expected <<-\EOF &&
 	four
 	three
@@ -623,7 +623,7 @@ test_expect_success 'fetch with http:// using protocol v2' '
 	GIT_TRACE_PACKET="$(pwd)/log" git -C http_child -c protocol.version=2 \
 		fetch &&
 
-	git -C http_child log -1 --format=%s origin/master >actual &&
+	git -C http_child log -1 --format=%s origin/default >actual &&
 	git -C "$HTTPD_DOCUMENT_ROOT_PATH/http_parent" log -1 --format=%s >expect &&
 	test_cmp expect actual &&
 
@@ -651,11 +651,11 @@ test_expect_success 'fetch from namespaced repo respects namespaces' '
 	test_commit -C "$HTTPD_DOCUMENT_ROOT_PATH/nsrepo" one &&
 	test_commit -C "$HTTPD_DOCUMENT_ROOT_PATH/nsrepo" two &&
 	git -C "$HTTPD_DOCUMENT_ROOT_PATH/nsrepo" \
-		update-ref refs/namespaces/ns/refs/heads/master one &&
+		update-ref refs/namespaces/ns/refs/heads/default one &&
 
 	GIT_TRACE_PACKET="$(pwd)/log" git -C http_child -c protocol.version=2 \
 		fetch "$HTTPD_URL/smart_namespace/nsrepo" \
-		refs/heads/master:refs/heads/theirs &&
+		refs/heads/default:refs/heads/theirs &&
 
 	# Server responded using protocol v2
 	grep "fetch< version 2" log &&
@@ -686,7 +686,7 @@ test_expect_success 'push with http:// and a config of v2 does not request v2' '
 	test_commit -C http_child three &&
 
 	# Push to another branch, as the target repository has the
-	# master branch checked out and we cannot push into it.
+	# default branch checked out and we cannot push into it.
 	GIT_TRACE_PACKET="$(pwd)/log" git -C http_child -c protocol.version=2 \
 		push origin HEAD:client_branch &&
 

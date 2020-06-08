@@ -17,9 +17,9 @@ commit_message() {
 #
 # master1 - master2 - master3
 #                             \
-# README ---------------------- Add subproject master - master4 - files_subtree/master5
+# README ---------------------- Add subproject default - master4 - files_subtree/master5
 #
-# Where the merge moves the files master[123].t into the subdirectory
+# Where the merge moves the files default[123].t into the subdirectory
 # files_subtree/ and master4 as well as files_subtree/master5 add files to that
 # directory directly.
 #
@@ -28,7 +28,7 @@ commit_message() {
 # an empty commit is added on top. The pre-rebase commit history looks like
 # this:
 #
-# Add subproject master - master4 - files_subtree/master5 - Empty commit
+# Add subproject default - master4 - files_subtree/master5 - Empty commit
 #
 # where the root commit adds three files: master1.t, master2.t and master3.t.
 #
@@ -48,11 +48,11 @@ test_expect_success 'setup' '
 	test_commit -C files master3 &&
 
 	: perform subtree merge into files_subtree/ &&
-	git fetch files refs/heads/master:refs/heads/files-master &&
+	git fetch files refs/heads/default:refs/heads/files-default &&
 	git merge -s ours --no-commit --allow-unrelated-histories \
-		files-master &&
-	git read-tree --prefix=files_subtree -u files-master &&
-	git commit -m "Add subproject master" &&
+		files-default &&
+	git read-tree --prefix=files_subtree -u files-default &&
+	git commit -m "Add subproject default" &&
 
 	: add two extra commits to rebase &&
 	test_commit -C files_subtree master4 &&
@@ -70,7 +70,7 @@ test_expect_success 'setup' '
 test_expect_failure REBASE_P 'Rebase -Xsubtree --preserve-merges --onto commit' '
 	reset_rebase &&
 	git checkout -b rebase-preserve-merges to-rebase &&
-	git rebase -Xsubtree=files_subtree --preserve-merges --onto files-master master &&
+	git rebase -Xsubtree=files_subtree --preserve-merges --onto files-default default &&
 	verbose test "$(commit_message HEAD~)" = "master4" &&
 	verbose test "$(commit_message HEAD)" = "files_subtree/master5"
 '
@@ -79,7 +79,7 @@ test_expect_failure REBASE_P 'Rebase -Xsubtree --preserve-merges --onto commit' 
 test_expect_failure REBASE_P 'Rebase -Xsubtree --keep-empty --preserve-merges --onto commit' '
 	reset_rebase &&
 	git checkout -b rebase-keep-empty to-rebase &&
-	git rebase -Xsubtree=files_subtree --keep-empty --preserve-merges --onto files-master master &&
+	git rebase -Xsubtree=files_subtree --keep-empty --preserve-merges --onto files-default default &&
 	verbose test "$(commit_message HEAD~2)" = "master4" &&
 	verbose test "$(commit_message HEAD~)" = "files_subtree/master5" &&
 	verbose test "$(commit_message HEAD)" = "Empty commit"
@@ -88,7 +88,7 @@ test_expect_failure REBASE_P 'Rebase -Xsubtree --keep-empty --preserve-merges --
 test_expect_success 'Rebase -Xsubtree --empty=ask --onto commit' '
 	reset_rebase &&
 	git checkout -b rebase-onto to-rebase &&
-	test_must_fail git rebase -Xsubtree=files_subtree --empty=ask --onto files-master master &&
+	test_must_fail git rebase -Xsubtree=files_subtree --empty=ask --onto files-default default &&
 	: first pick results in no changes &&
 	git rebase --skip &&
 	verbose test "$(commit_message HEAD~2)" = "master4" &&
@@ -99,7 +99,7 @@ test_expect_success 'Rebase -Xsubtree --empty=ask --onto commit' '
 test_expect_success 'Rebase -Xsubtree --empty=ask --rebase-merges --onto commit' '
 	reset_rebase &&
 	git checkout -b rebase-merges-onto to-rebase &&
-	test_must_fail git rebase -Xsubtree=files_subtree --empty=ask --rebase-merges --onto files-master --root &&
+	test_must_fail git rebase -Xsubtree=files_subtree --empty=ask --rebase-merges --onto files-default --root &&
 	: first pick results in no changes &&
 	git rebase --skip &&
 	verbose test "$(commit_message HEAD~2)" = "master4" &&

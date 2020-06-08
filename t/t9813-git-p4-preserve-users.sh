@@ -74,7 +74,7 @@ test_expect_success 'refuse to preserve users without perms' '
 		P4EDITOR="test-tool chmtime +5" P4USER=bob P4PASSWD=secret &&
 		export P4EDITOR P4USER P4PASSWD &&
 		test_must_fail git p4 commit --preserve-user &&
-		! git diff --exit-code HEAD..p4/master
+		! git diff --exit-code HEAD..p4/default
 	)
 '
 
@@ -92,13 +92,13 @@ test_expect_success 'preserve user where author is unknown to p4' '
 		P4EDITOR="test-tool chmtime +5" P4USER=alice P4PASSWD=secret &&
 		export P4EDITOR P4USER P4PASSWD &&
 		test_must_fail git p4 commit --preserve-user &&
-		! git diff --exit-code HEAD..p4/master &&
+		! git diff --exit-code HEAD..p4/default &&
 
 		echo "$0: repeat with allowMissingP4Users enabled" &&
 		git config git-p4.allowMissingP4Users true &&
 		git config git-p4.preserveUser true &&
 		git p4 commit &&
-		git diff --exit-code HEAD..p4/master &&
+		git diff --exit-code HEAD..p4/default &&
 		p4_check_commit_author file1 alice
 	)
 '

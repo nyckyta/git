@@ -12,14 +12,14 @@ test_expect_success setup '
 	echo hello >frotz/filfre &&
 	git add frotz/filfre &&
 	test_tick &&
-	git commit -m "master has file frotz/filfre" &&
+	git commit -m "default has file frotz/filfre" &&
 
 	git branch side &&
 
 	echo goodbye >nitfol &&
 	git add nitfol &&
 	test_tick &&
-	git commit -m "master adds file nitfol" &&
+	git commit -m "default adds file nitfol" &&
 
 	git checkout side &&
 
@@ -34,13 +34,13 @@ test_expect_success setup '
 
 test_expect_success 'switch from symlink to dir' '
 
-	git checkout master
+	git checkout default
 
 '
 
-test_expect_success 'Remove temporary directories & switch to master' '
+test_expect_success 'Remove temporary directories & switch to default' '
 	rm -fr frotz xyzzy nitfol &&
-	git checkout -f master
+	git checkout -f default
 '
 
 test_expect_success 'switch from dir to symlink' '

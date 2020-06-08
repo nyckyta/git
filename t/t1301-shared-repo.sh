@@ -115,13 +115,13 @@ test_expect_success POSIXPERM 'git reflog expire honors core.sharedRepository' '
 	umask 077 &&
 	git config core.sharedRepository group &&
 	git reflog expire --all &&
-	actual="$(ls -l .git/logs/refs/heads/master)" &&
+	actual="$(ls -l .git/logs/refs/heads/default)" &&
 	case "$actual" in
 	-rw-rw-*)
 		: happy
 		;;
 	*)
-		echo Ooops, .git/logs/refs/heads/master is not 0662 [$actual]
+		echo Ooops, .git/logs/refs/heads/default is not 0662 [$actual]
 		false
 		;;
 	esac

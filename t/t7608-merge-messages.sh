@@ -10,51 +10,51 @@ check_oneline() {
 }
 
 test_expect_success 'merge local branch' '
-	test_commit master-1 &&
+	test_commit default-1 &&
 	git checkout -b local-branch &&
 	test_commit branch-1 &&
-	git checkout master &&
-	test_commit master-2 &&
+	git checkout default &&
+	test_commit default-2 &&
 	git merge local-branch &&
 	check_oneline "Merge branch Qlocal-branchQ"
 '
 
 test_expect_success 'merge octopus branches' '
-	git checkout -b octopus-a master &&
+	git checkout -b octopus-a default &&
 	test_commit octopus-1 &&
-	git checkout -b octopus-b master &&
+	git checkout -b octopus-b default &&
 	test_commit octopus-2 &&
-	git checkout master &&
+	git checkout default &&
 	git merge octopus-a octopus-b &&
 	check_oneline "Merge branches Qoctopus-aQ and Qoctopus-bQ"
 '
 
 test_expect_success 'merge tag' '
-	git checkout -b tag-branch master &&
+	git checkout -b tag-branch default &&
 	test_commit tag-1 &&
-	git checkout master &&
-	test_commit master-3 &&
+	git checkout default &&
+	test_commit default-3 &&
 	git merge tag-1 &&
 	check_oneline "Merge tag Qtag-1Q"
 '
 
 test_expect_success 'ambiguous tag' '
-	git checkout -b ambiguous master &&
+	git checkout -b ambiguous default &&
 	test_commit ambiguous &&
-	git checkout master &&
-	test_commit master-4 &&
+	git checkout default &&
+	test_commit default-4 &&
 	git merge ambiguous &&
 	check_oneline "Merge tag QambiguousQ"
 '
 
 test_expect_success 'remote-tracking branch' '
-	git checkout -b remote master &&
+	git checkout -b remote default &&
 	test_commit remote-1 &&
-	git update-ref refs/remotes/origin/master remote &&
-	git checkout master &&
-	test_commit master-5 &&
-	git merge origin/master &&
-	check_oneline "Merge remote-tracking branch Qorigin/masterQ"
+	git update-ref refs/remotes/origin/default remote &&
+	git checkout default &&
+	test_commit default-5 &&
+	git merge origin/default &&
+	check_oneline "Merge remote-tracking branch Qorigin/defaultQ"
 '
 
 test_done
