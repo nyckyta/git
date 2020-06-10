@@ -158,6 +158,15 @@ test_expect_success 'setup FETCH_HEAD' '
 	git fetch . left
 '
 
+test_expect_success 'with overridden default branch name' '
+	test_config core.defaultBranchName default &&
+	test_when_finished "git switch master" &&
+	git switch -c default &&
+	GIT_TEST_DEFAULT_BRANCH_NAME= \
+	git fmt-merge-msg <.git/FETCH_HEAD >actual &&
+	! grep "into default" actual
+'
+
 test_expect_success 'merge.log=3 limits shortlog length' '
 	cat >expected <<-EOF &&
 	Merge branch ${apos}left${apos}
