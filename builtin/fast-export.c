@@ -515,13 +515,17 @@ static const char *anonymize_refname(const char *refname)
 	};
 	static struct hashmap refs;
 	static struct strbuf anon = STRBUF_INIT;
+	static char *default_branch_name;
 	int i;
 
 	/*
-	 * We also leave "master" as a special case, since it does not reveal
-	 * anything interesting.
+	 * We also leave the default branch name as a special case, since it
+	 * does not reveal anything interesting.
 	 */
-	if (!strcmp(refname, "refs/heads/master"))
+	if (!default_branch_name)
+		default_branch_name = git_default_branch_name(0);
+
+	if (!strcmp(refname, default_branch_name))
 		return refname;
 
 	strbuf_reset(&anon);
