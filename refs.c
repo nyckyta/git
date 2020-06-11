@@ -560,32 +560,34 @@ void expand_ref_prefix(struct argv_array *prefixes, const char *prefix)
 		argv_array_pushf(prefixes, *p, len, prefix);
 }
 
-char *git_default_branch_name(int short_name)
+char *git_primary_branch_name(int short_name)
 {
-	const char *branch_name = getenv("GIT_TEST_DEFAULT_BRANCH_NAME");
+	const char *branch_name;
 	char *from_config = NULL, *prefixed;
 
 	/*
-	 * If the default branch name was not specified via the environment
-	 * variable GIT_TEST_DEFAULT_BRANCH_NAME, retrieve it from the config
-	 * setting core.defaultBranchName. If neither are set, fall back to the
-	 * hard-coded default.
+	 * Current `git init` will _always_ configure the primary (or: main)
+	 * branch name via the config setting `core.primaryBranchName`. If it
+	 * is not set, fall back to the hard-coded, backwards-compatible
+	 * default.
 	 */
-	if (!branch_name || !*branch_name) {
-		if (git_config_get_string("core.defaultbranchname",
-					  &from_config) < 0)
-			die(_("could not retrieve `core.defaultBranchName`"));
+	if (git_config_get_string("core.primarybranchname",
+				  &from_config) < 0)
+		die(_("could not retrieve `core.primaryBranchName`"));
 
-		branch_name = from_config ? from_config : "main";
-	}
+	branch_name = from_config ? from_config : "master";
 
-	if (short_name)
+	if (short_name) {
+		if (check_refname_format(branch_name, 0))
+			die(_("invalid primary branch name: '%s'"),
+			    branch_name);
 		return from_config ? from_config : xstrdup(branch_name);
+	}
 
 	/* prepend "refs/heads/" to the branch name */
 	prefixed = xstrfmt("refs/heads/%s", branch_name);
 	if (check_refname_format(prefixed, 0))
-		die(_("invalid default branch name: '%s'"), branch_name);
+		die(_("invalid primary branch name: '%s'"), branch_name);
 
 	free(from_config);
 	return prefixed;

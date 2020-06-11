@@ -196,6 +196,33 @@ void initialize_repository_version(int hash_algo)
 			       hash_algos[hash_algo].name);
 }
 
+static char *git_default_branch_name(void)
+{
+	const char *branch_name;
+	char *from_config = NULL, *prefixed;
+
+	/*
+	 * If the default branch name was not specified via the config
+	 * setting `init.defaultBranchName`, fall back to the hard-coded
+	 * default.
+	 */
+	if (git_config_get_string("init.defaultbranchname",
+				  &from_config) < 0)
+		die(_("could not retrieve `init.defaultBranchName`"));
+
+	branch_name = from_config ? from_config : "main";
+
+	/* prepend "refs/heads/" to the branch name */
+	prefixed = xstrfmt("refs/heads/%s", branch_name);
+	if (check_refname_format(prefixed, 0))
+		die(_("invalid default branch name: '%s'"), branch_name);
+
+	free(from_config);
+	return prefixed;
+}
+
+
+
 static int create_default_files(const char *template_path,
 				const char *original_git_dir,
 				const struct repository_format *fmt)
@@ -260,7 +287,7 @@ static int create_default_files(const char *template_path,
 	reinit = (!access(path, R_OK)
 		  || readlink(path, junk, sizeof(junk)-1) != -1);
 	if (!reinit) {
-		char *default_ref = git_default_branch_name(0);
+		char *default_ref = git_default_branch_name();
 		if (create_symref("HEAD", default_ref, NULL) < 0)
 			exit(1);
 		free(default_ref);
