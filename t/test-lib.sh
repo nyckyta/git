@@ -462,9 +462,6 @@ export GIT_DEFAULT_HASH
 GIT_TRACE_BARE=1
 export GIT_TRACE_BARE
 
-GIT_TEST_DEFAULT_INITIAL_BRANCH_NAME=main
-export GIT_TEST_DEFAULT_INITIAL_BRANCH_NAME
-
 check_var_migration () {
 	# the warnings and hints given from this helper depends
 	# on end-user settings, which will disrupt the self-test
