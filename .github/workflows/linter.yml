@@ -1,0 +1,17 @@
+name: Lint All The Code
+
+# See https://help.github.com/en/articles/workflow-syntax-for-github-actions
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+      - name: Lint
+        uses: docker://github/super-linter:v2.2.0
