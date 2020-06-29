@@ -621,10 +621,11 @@ static int is_active(const char *path)
 	// TODO So doesn't this just test that the server had in the
 	// TODO past been active??
 
-	return !lstat(path, &st) && (st.st_mode & S_IFMT) == S_IFSOCK;
+	return !lstat(path, &st) && (st.st_mode & S_IFMT) == S_IFSOCK ?
+		IPC_STATE__ACTIVE : IPC_STATE__NOT_ACTIVE;
 }
 
-int ipc_is_active(const char *path)
+enum IPC_ACTIVE_STATE ipc_is_active(const char *path)
 {
 	return is_active(path);
 }
