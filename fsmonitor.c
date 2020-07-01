@@ -396,7 +396,7 @@ GIT_PATH_FUNC(git_path_fsmonitor, "fsmonitor")
 int fsmonitor_stop_daemon(void)
 {
 	struct strbuf answer = STRBUF_INIT;
-	int ret = ipc_send_command(git_path_fsmonitor(), "quit", &answer);
+	int ret = ipc_client_send_command(git_path_fsmonitor(), "quit", &answer);
 	strbuf_release(&answer);
 	return ret;
 }
@@ -413,8 +413,8 @@ int fsmonitor_query_daemon(const char *since, struct strbuf *answer)
 	}
 
 	strbuf_addf(&command, "%ld %s", FSMONITOR_VERSION, since);
-	ret = ipc_send_command(git_path_fsmonitor(),
-				command.buf, answer);
+	ret = ipc_client_send_command(git_path_fsmonitor(),
+				      command.buf, answer);
 	strbuf_release(&command);
 	return ret;
 }

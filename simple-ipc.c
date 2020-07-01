@@ -672,11 +672,11 @@ static void unlink_listener_path(void)
 	string_list_clear(&listener_paths, 0);
 }
 
-int ipc_listen_for_commands(struct ipc_command_listener *listener)
+int ipc_server_await(struct ipc_server_data *listener)
 {
 	int ret = 0, fd;
 
-	if (is_active(listener->path))
+	if (is_active(listener->buf_path.buf))
 		return error(_("server already running at %s"), listener->path);
 
 	fd = unix_stream_listen(listener->path);
@@ -758,8 +758,8 @@ int ipc_listen_for_commands(struct ipc_command_listener *listener)
 	return ret == SIMPLE_IPC_QUIT ? 0 : ret;
 }
 
-int ipc_send_command(const char *path, const char *message,
-		     struct strbuf *answer)
+int ipc_client_send_command(const char *path, const char *message,
+			    struct strbuf *answer)
 {
 	int fd = unix_stream_connect(path);
 	int ret = 0;

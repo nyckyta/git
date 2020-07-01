@@ -48,7 +48,7 @@ static int fsmonitor_stop_daemon(void)
 #define FSMONITOR_DAEMON_IS_SUPPORTED 1
 
 struct ipc_data {
-	struct ipc_command_listener data;
+	struct ipc_server_data data;
 	struct fsmonitor_daemon_state *state;
 };
 
@@ -111,7 +111,7 @@ void fsmonitor_cookie_seen_trigger(struct fsmonitor_daemon_state *state,
 
 KHASH_INIT(str, const char *, int, 0, kh_str_hash_func, kh_str_hash_equal);
 
-static int handle_client(struct ipc_command_listener *data, const char *command,
+static int handle_client(struct ipc_server_data *data, const char *command,
 			 ipc_reply_fn_t reply, void *reply_data)
 {
 	struct fsmonitor_daemon_state *state = ((struct ipc_data *)data)->state;
@@ -306,7 +306,7 @@ static int fsmonitor_run_daemon(int background)
 		pthread_cond_wait(&state.initial_cond, &state.initial_mutex);
 	pthread_mutex_unlock(&state.initial_mutex);
 
-	return ipc_listen_for_commands(&ipc_data.data);
+	return ipc_server_run(&ipc_data.data);
 }
 #endif
 
