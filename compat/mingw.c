@@ -1287,63 +1287,67 @@ struct tm *localtime_r(const time_t *timep, struct tm *result)
 	return NULL;
 }
 
-static int realpath_existing_file(struct strbuf *resolved, const char *path, int path_len)
+char *mingw_strbuf_realpath(struct strbuf *resolved, const char *path)
 {
 	wchar_t wpath[MAX_PATH];
 	HANDLE h;
 	DWORD ret;
 	int len;
+	const char *last_component = NULL;
 
-	if (xutftowcs_path_ex(wpath, path, MAX_PATH, path_len, MAX_PATH, 0) < 0)
-		return -1;
+	if (xutftowcs_path(wpath, path) < 0)
+		return NULL;
 
 	h = CreateFileW(wpath, 0,
 			FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
 			OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+
+	/*
+	 * strbuf_realpath() allows the last path component to not exist. If
+	 * that is the case, now it's time to try without last component.
+	 */
+	if (h == INVALID_HANDLE_VALUE &&
+	    GetLastError() == ERROR_FILE_NOT_FOUND) {
+		/* cut last component off of `wpath` */
+		wchar_t *p = wpath + wcslen(wpath);
+
+		while (p != wpath)
+			if (*(--p) == L'/' || *p == L'\\')
+				break; /* found start of last component */
+
+		if (p != wpath && (last_component = find_last_dir_sep(path))) {
+			last_component++; /* skip directory separator */
+			*p = L'\0';
+			h = CreateFileW(wpath, 0, FILE_SHARE_READ |
+					FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+					NULL, OPEN_EXISTING,
+					FILE_FLAG_BACKUP_SEMANTICS, NULL);
+		}
+	}
+
 	if (h == INVALID_HANDLE_VALUE)
-		return -1;
+		return NULL;
 
 	ret = GetFinalPathNameByHandleW(h, wpath, ARRAY_SIZE(wpath), 0);
 	CloseHandle(h);
 	if (!ret || ret >= ARRAY_SIZE(wpath))
-		return -1;
+		return NULL;
 
 	len = wcslen(wpath) * 3;
 	strbuf_grow(resolved, len);
 	len = xwcstoutf(resolved->buf, normalize_ntpath(wpath), len);
 	if (len < 0)
-		return -1;
+		return NULL;
 	resolved->len = len;
-	return 0;
-}
 
-char *mingw_strbuf_realpath(struct strbuf *resolved, const char *path)
-{
-	char *last_component;
+	if (last_component) {
+		/* Use forward-slash, like `normalize_ntpath()` */
+		strbuf_addch(resolved, '/');
+		strbuf_addstr(resolved, last_component);
+	}
 
-	if (realpath_existing_file(resolved, path, -1) >= 0)
-		return resolved->buf;
-
-	/*
-	 * strbuf_realpath() allows last path component to not exist.
-	 * Resolving full path failed, now it's time to try without last component.
-	 *
-	 * Retry on all errors to better match behavior of `strbuf_realpath()`.
-	 * For example, for no-access last directory, `strbuf_realpath()` ignores
-	 * that (because it doesn't try to `CreateFile()`) and still succeeds.
-	 */
-
-	last_component = find_last_dir_sep(path);
-	if (!last_component)
-		return NULL;
-
-	if (realpath_existing_file(resolved, path, last_component - path) < 0)
-		return NULL;
-
-	/* Force / instead of \ in appended component */
-	strbuf_addch(resolved, '/');
-	strbuf_addstr(resolved, last_component + 1);
 	return resolved->buf;
+
 }
 
 char *mingw_getcwd(char *pointer, int len)
