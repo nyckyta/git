@@ -210,13 +210,19 @@ static int create_default_files(const char *template_path,
 	struct strbuf buf = STRBUF_INIT;
 	char *path;
 	char junk[2];
-	int reinit;
+	int reinit, override_HEAD_in_templates = 0;
 	int filemode;
 	struct strbuf err = STRBUF_INIT;
 
 	/* Just look for `init.templatedir` */
 	init_db_template_dir = NULL; /* re-set in case it was set before */
 	git_config(git_init_db_config, NULL);
+
+	if (initial_branch) {
+		path = git_path_buf(&buf, "HEAD");
+		override_HEAD_in_templates = access(path, R_OK) ||
+			readlink(path, junk, sizeof(junk)-1) < 0;
+	}
 
 	/*
 	 * First copy the templates -- we might have the default
@@ -265,7 +271,7 @@ static int create_default_files(const char *template_path,
 	path = git_path_buf(&buf, "HEAD");
 	reinit = (!access(path, R_OK)
 		  || readlink(path, junk, sizeof(junk)-1) != -1);
-	if (!reinit) {
+	if (!reinit || override_HEAD_in_templates) {
 		char *ref;
 
 		if (!initial_branch)
