@@ -321,11 +321,11 @@ test_expect_success 'git branch --list -v with --abbrev' '
 
 '
 
-test_expect_success 'git branch --column' '
+test_expect_success PREPARE_FOR_MAIN_BRANCH 'git branch --column' '
 	COLUMNS=81 git branch --column=column >actual &&
 	cat >expect <<\EOF &&
-  a/b/c    bam      foo      l        main2    mb       o/o      q
-  abc      bar      j/k      m/m    * master   n        o/p      r
+  a/b/c   bam     foo     l     * main    mb      o/o     q
+  abc     bar     j/k     m/m     main2   n       o/p     r
 EOF
 	test_cmp expect actual
 '
@@ -358,15 +358,15 @@ EOF
 	test_cmp expect actual
 '
 
-test_expect_success 'git branch with column.*' '
+test_expect_success PREPARE_FOR_MAIN_BRANCH 'git branch with column.*' '
 	git config column.ui column &&
 	git config column.branch "dense" &&
 	COLUMNS=80 git branch >actual &&
 	git config --unset column.branch &&
 	git config --unset column.ui &&
 	cat >expect <<\EOF &&
-  a/b/c   bam   foo   l     main2    mb   o/o   q
-  abc     bar   j/k   m/m * master   n    o/p   r
+  a/b/c   bam   foo   l   * main    mb   o/o   q
+  abc     bar   j/k   m/m   main2   n    o/p   r
 EOF
 	test_cmp expect actual
 '
